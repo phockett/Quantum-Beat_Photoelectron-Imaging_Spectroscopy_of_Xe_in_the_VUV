@@ -16,5 +16,8 @@ jupyter-book
 matplotlib
 numpy
 xarray
+scipy
+holoviews
+hvplot
 ghp-import
 
