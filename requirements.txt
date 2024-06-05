@@ -12,8 +12,10 @@ typer
 osfclient
 
 # Optional for GHpages/Jupyter Book build
+# Note some versioning to match local test env.
+# For Matplotlib newer versions have some issues with old Seaborn (v0.9 pinned in ePSproc currently).
 jupyter-book
-matplotlib
+matplotlib <= 3.4 
 numpy
 xarray
 scipy
