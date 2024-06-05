@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+  # Allow for manual trigger 
+  workflow_dispatch:
+
+
 env:
   BASE_URL: /${{ github.event.repository.name }}
 
