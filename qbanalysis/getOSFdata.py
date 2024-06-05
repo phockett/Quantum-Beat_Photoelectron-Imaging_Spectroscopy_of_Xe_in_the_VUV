@@ -20,6 +20,35 @@ from qbanalysis.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 app = typer.Typer()
 
 def getProjectFile(project,dataPath,dataFile):
+    """
+    Get project file from OSF repository
+    
+    Basic wrapper to implement osfclient fetch method (similar to https://osfclient.readthedocs.io/en/latest/_modules/osfclient/cli.html#fetch), but with dir creation + file unzipper.
+    
+    Inputs
+    ------
+    
+    project : str
+        OSF project ID.
+        
+    dataPath : str or Path object
+        Dir for downloaded file.
+        Will be created (with parents) if missing.
+        
+    dataFile : str or Path object
+        Filename for file to download.
+        Files in the OSF project will be parsed to find a match.
+    
+    Returns
+    -------
+    dictionary
+        Dictionary with parameters and filelist.
+        
+    """
+    
+    # Check Path wrappers OK
+    dataPath = Path(dataPath)
+    dataFile = Path(dataFile)
     
     # Set project
     # osfclient.cli.list_(project)
@@ -31,13 +60,18 @@ def getProjectFile(project,dataPath,dataFile):
     # Get files
     projStore = projInstance.storage(provider='osfstorage')
 
+    # Create destination dir if missing
+    if not dataPath.exists():
+        dataPath.mkdir(parents=True)
+        logger.info(f"Created destination dir {dataPath}.")
+    
     # Get single file from OSF
     # Adapted from https://osfclient.readthedocs.io/en/latest/_modules/osfclient/cli.html#fetch
     # Otherwise doesn't seem to be an option for this aside from CLI?
     localPath = dataPath.expanduser()/dataFile
     logger.info(f"Scanning OSF project files...")
     for n,item in enumerate(projStore.files):
-        if item.name == dataFile:
+        if item.name == dataFile.as_posix():
             logger.info(f"Downloading {dataFile} (index n={n})...")
 
             with open(localPath, 'wb') as fp:
@@ -52,14 +86,15 @@ def getProjectFile(project,dataPath,dataFile):
         shutil.unpack_archive(localPath, dataPath.expanduser())
 
     # Check files
-    fList = sorted(dataPath.expanduser().glob('**'))
+    fList = sorted(dataPath.expanduser().glob('*'))
 
     # Print file names only
     fNames = [item.name for item in fList]
     
     # Set dict for return
-    fDict = {'project':project,
+    projDict = {'project':project,
              'name':projInstance.title,
+             'URL':projURL,
              'dataPath': dataPath,
              'dataFile': dataFile,
              'fullPath': localPath,
@@ -67,7 +102,7 @@ def getProjectFile(project,dataPath,dataFile):
              'fileNames': fNames
             }
 
-    return fDict
+    return projDict
 
 
 @app.command()
