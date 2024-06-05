@@ -37,7 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements.txt;
 	  pip install git+https://github.com/phockett/ePSproc@3d-AFPAD-dev
 
       # (optional) Cache your executed notebooks between runs
