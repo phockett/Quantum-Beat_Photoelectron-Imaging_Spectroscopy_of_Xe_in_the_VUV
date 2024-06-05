@@ -4,7 +4,7 @@
 format: jb-book
 root: intro
 chapters:
-- file: markdown
-- file: notebooks
-- file: markdown-notebooks
+#- file: markdown
+#- file: notebooks
+#- file: markdown-notebooks
 - file: 0.01_data_download_and_preliminaries_050624

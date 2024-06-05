@@ -1,11 +1,12 @@
-# Welcome to your Jupyter Book
+# Xe Quantum Beats in the VUV: data download and preliminaries
 
-This is a small sample book to give you a feel for how book content is
-structured.
-It shows off a few of the major file types, as well as some sample content.
-It does not go in-depth into any particular topic - check out [the Jupyter Book documentation](https://jupyterbook.org) for more information.
+From prior work and data:
 
-Check out the content pages bundled with this sample book to see more.
+- Forbes, R. et al. (2018) ‘Quantum-beat photoelectron-imaging spectroscopy of Xe in the VUV’, Physical Review A, 97(6), p. 063417. Available at: https://doi.org/10.1103/PhysRevA.97.063417. arXiv: http://arxiv.org/abs/1803.01081
+- Data (OSF): https://osf.io/ds8mk/
+
+HTML built with [Jupyter Book](https://jupyterbook.org).
+
 
 ```{tableofcontents}
 ```
