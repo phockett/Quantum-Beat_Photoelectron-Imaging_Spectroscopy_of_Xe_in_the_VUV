@@ -19,7 +19,7 @@ xarray
 scipy
 holoviews
 hvplot
-pyviz
+# pyviz   # Not sure if this is necessary, also may need pip install pyct[cmd]
 ghp-import
 wget
 
