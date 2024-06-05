@@ -42,7 +42,7 @@ jobs:
       # Build the book
       - name: Build the book
         run: |
-          jupyter-book build Quantum-Beat_Photoelectron-Imaging_Spectroscopy_of_Xe_in_the_VUV
+          jupyter-book build doc-source
 
       # Upload the book's HTML as an artifact
       - name: Upload artifact
