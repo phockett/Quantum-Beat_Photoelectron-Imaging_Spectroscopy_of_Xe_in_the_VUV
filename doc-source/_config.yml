@@ -16,6 +16,7 @@ only_build_toc_files        : true  # Skip processing all other files, e.g. back
 execute:
   execute_notebooks: cache
   allow_errors: true
+  timeout: 1000
 
 # Define the name of the latex output file for PDF builds
 latex:
