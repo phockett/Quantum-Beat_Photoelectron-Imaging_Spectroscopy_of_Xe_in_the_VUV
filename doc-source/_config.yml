@@ -27,7 +27,7 @@ bibtex_bibfiles:
 # Information about where the book exists on the web
 repository:
   url: https://github.com/phockett/Quantum-beat photoelectron-imaging spectroscopy of Xe in the VUV  # Online location of your book
-  path_to_book: docs  # Optional path to your book, relative to the repository root
+  path_to_book: doc-source  # Optional path to your book, relative to the repository root
   branch: main  # Which branch of the repository should be used when creating links (optional)
 
 # Add GitHub buttons to your book
