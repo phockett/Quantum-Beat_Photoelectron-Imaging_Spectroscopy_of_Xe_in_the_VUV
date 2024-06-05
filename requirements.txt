@@ -10,3 +10,11 @@ typer
 
 # Optional for OSF downloads
 osfclient
+
+# Optional for GHpages/Jupyter Book build
+jupyter-book
+matplotlib
+numpy
+xarray
+ghp-import
+
