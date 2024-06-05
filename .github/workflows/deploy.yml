@@ -40,15 +40,16 @@ jobs:
           pip install -r requirements.txt
 
       # Build the book
+      # Note add '--keep-going' to skip errors.
       - name: Build the book
         run: |
-          jupyter-book build doc-source
+          jupyter-book build --keep-going doc-source
 
       # Upload the book's HTML as an artifact
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: "_build/html"
+          path: "doc-source/_build/html"
 
       # Deploy the book's HTML to GitHub Pages
       - name: Deploy to GitHub Pages
