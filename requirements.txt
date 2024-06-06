@@ -20,10 +20,14 @@ jupyter-book
 numpy
 xarray
 scipy
+
 holoviews
 hvplot
-h5py
 # pyviz   # Not sure if this is necessary, also may need pip install pyct[cmd]
+
+h5py
+h5netcdf
+
 ghp-import
 wget
 
