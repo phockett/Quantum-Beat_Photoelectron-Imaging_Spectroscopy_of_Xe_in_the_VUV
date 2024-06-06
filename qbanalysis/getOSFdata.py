@@ -19,7 +19,7 @@ from qbanalysis.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 
 app = typer.Typer()
 
-def getProjectFile(project,dataPath,dataFile):
+def getProjectFile(project,dataPath,dataFile, overwrite=False):
     """
     Get project file from OSF repository
     
@@ -38,6 +38,9 @@ def getProjectFile(project,dataPath,dataFile):
     dataFile : str or Path object
         Filename for file to download.
         Files in the OSF project will be parsed to find a match.
+        
+    overwrite : bool, optional, default = False
+        If False, skip download if file exists.
     
     Returns
     -------
@@ -69,21 +72,35 @@ def getProjectFile(project,dataPath,dataFile):
     # Adapted from https://osfclient.readthedocs.io/en/latest/_modules/osfclient/cli.html#fetch
     # Otherwise doesn't seem to be an option for this aside from CLI?
     localPath = dataPath.expanduser()/dataFile
-    logger.info(f"Scanning OSF project files...")
-    for n,item in enumerate(projStore.files):
-        if item.name == dataFile.as_posix():
-            logger.info(f"Downloading {dataFile} (index n={n})...")
+    
+    downloadFlag = True
+    
+    # Check if path exists, and skip download in some cases.
+    if localPath.exists():
+        logger.info(f"Found local file at {localPath}.")
+        downloadFlag = False
+        
+        if overwrite:
+            downloadFlag = True
+        else:
+            logger.info(f"Skipping download, pass `overwrite=True` to redownload.")
+    
+    if downloadFlag:
+        logger.info(f"Scanning OSF project files...")
+        for n,item in enumerate(projStore.files):
+            if item.name == dataFile.as_posix():
+                logger.info(f"Downloading {dataFile} (index n={n})...")
 
-            with open(localPath, 'wb') as fp:
-                item.write_to(fp)
-                
-            logger.success(f"Downoaded data file to {localPath}.")
-            break
-            
-    # Unzip dataFile
-    if dataFile.suffix == '.zip':
-        logger.info(f"Unzipping {dataFile}.")
-        shutil.unpack_archive(localPath, dataPath.expanduser())
+                with open(localPath, 'wb') as fp:
+                    item.write_to(fp)
+
+                logger.success(f"Downoaded data file to {localPath}.")
+                break
+
+        # Unzip dataFile
+        if dataFile.suffix == '.zip':
+            logger.info(f"Unzipping {dataFile}.")
+            shutil.unpack_archive(localPath, dataPath.expanduser())
 
     # Check files
     fList = sorted(dataPath.expanduser().glob('*'))
