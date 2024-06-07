@@ -19,6 +19,20 @@ from sympy import Ynm
 theta, phi = symbols("theta phi")
 init_printing()
 
+# Check np.int and replace if necessary
+# UPDATE - now just replaced np.int with int in code
+# import warnings
+# warnings.filterwarnings("error")
+
+# try: 
+#     np.int
+# except (DeprecationWarning,AttributeError):
+#     np.int = int
+
+# # warnings.resetwarnings()
+# warnings.filterwarnings("default")
+
+
 
 #*** G parameters
 
@@ -332,7 +346,7 @@ def sphSumTKQ(A, J, norm = 1.0):
     for row in range(A.shape[0]):  
         if np.absolute(A[row][2]) > thres:
             angMomTerm = (-1)**J * (2*J+1) * wigner_3j(J,J,A[row][0],0,0,0)
-            Atp += angMomTerm*Ynm(np.int(A[row][0]),np.int(A[row][1]),theta,phi) * A[row][2]/norm # Add TKQ*Y(K,Q) term
+            Atp += angMomTerm*Ynm(int(A[row][0]),int(A[row][1]),theta,phi) * A[row][2]/norm # Add TKQ*Y(K,Q) term
             
     return Atp*sqrt(1/(4*pi))
 

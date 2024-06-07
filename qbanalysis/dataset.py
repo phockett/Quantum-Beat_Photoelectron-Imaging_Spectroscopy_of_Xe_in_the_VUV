@@ -1,3 +1,11 @@
+"""
+Load Xe datasets
+06/06/24
+
+Adapted from basic CCDS code templates, see https://cookiecutter-data-science.drivendata.org/all-options/#include-code-scaffold
+
+"""
+
 from pathlib import Path
 
 import typer
@@ -23,6 +31,9 @@ from epsproc.util.conversion import conv_BL_BLM
 def loadFinalDataset(dataPath):
     """
     Load final datasets only.
+    
+    Convert mat files to Xarrays.
+    
     """
     
     # Load final dataset only
@@ -138,6 +149,12 @@ def loadFinalDataset(dataPath):
     
     
 def loadDataset(dataPath, filesIn = None):
+    """
+    Load data via scipy.io.loadmap.
+    
+    Stack files to dictionary.
+    
+    """
     
     # Load
     dataIn = {}

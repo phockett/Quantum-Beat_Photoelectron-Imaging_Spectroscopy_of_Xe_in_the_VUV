@@ -11,7 +11,29 @@ import numpy as np
 
 app = typer.Typer()
 
-def plotFinalDatasetBLMt(BLMall = None, BLMerrCycle = None, **kwargs):
+def plotFinalDatasetBLMt(BLMall = None, BLMerrCycle = None, width = 800, **kwargs):
+    """
+    Plot final datasets with Holoviews/Bokeh.
+    
+    Output to match Fig. 5 in manuscript Forbes, R. et al. (2018) ‘Quantum-beat photoelectron-imaging spectroscopy of Xe in the VUV’, Physical Review A, 97(6), p. 063417. Available at: https://doi.org/10.1103/PhysRevA.97.063417. arXiv: http://arxiv.org/abs/1803.01081, Authorea (original HTML version): https://doi.org/10.22541/au.156045380.07795038
+    
+    Parameters
+    ----------
+    BLMall : Xarray
+        Final dataset to plot
+        
+    BLMerrCycle : Xarray
+        Per-cycle data, used to define uncertainties
+        
+    width : int, optional, default = 800
+        Output plot width setting
+        
+    Returns
+    -------
+    Holoviews layout plot object.
+    
+    """
+    
     # Quick plot - OK
     # BLMerr.unstack().squeeze().hvplot.line(x='t').overlay(['l','ROI'])
 
@@ -53,7 +75,7 @@ def plotFinalDatasetBLMt(BLMall = None, BLMerrCycle = None, **kwargs):
 
     hvPlot = hvDS.to(hvPlotters.hv.Spread, kdims = xDim).select(l=[2,4]).overlay(overlay)
 
-    return (hvPlot * BLMall.unstack().squeeze().hvplot.line(x='t').overlay(['ROI'])).opts(width=1000).layout('l').cols(1).opts(title='BLM(t), per Figure 5 in manuscript.')
+    return (hvPlot * BLMall.unstack().squeeze().hvplot.line(x='t').overlay(['ROI'])).opts(width=width).layout('l').cols(1).opts(title='BLM(t), per Figure 5 in manuscript.')
 
     # This now matches Fig. 5 in published manuscript.
 
