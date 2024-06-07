@@ -19,7 +19,7 @@ from sympy import Ynm
 theta, phi = symbols("theta phi")
 init_printing()
 
-# Check np.int and replace if necessary
+# Check np.int and replace if necessary, see https://stackoverflow.com/questions/5644836/in-python-how-does-one-catch-warnings-as-if-they-were-exceptions
 # UPDATE - now just replaced np.int with int in code
 # import warnings
 # warnings.filterwarnings("error")
