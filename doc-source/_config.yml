@@ -13,8 +13,9 @@ only_build_toc_files        : true  # Skip processing all other files, e.g. back
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
+# Note for GH action builds 'cache' works, but may fail for artefacts shared between notebooks!
 execute:
-  execute_notebooks: cache
+  execute_notebooks: force
   allow_errors: true
   timeout: 1000
 
