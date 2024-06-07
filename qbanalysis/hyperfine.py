@@ -14,6 +14,8 @@ from sympy import *
 from sympy.physics.wigner import wigner_3j, wigner_6j
 from scipy.constants import hbar
 
+from epsproc.sphCalc import setBLMs
+
 # Define Ylm(t,p) symbolically from Sympy
 from sympy import Ynm
 theta, phi = symbols("theta phi")
@@ -366,3 +368,102 @@ def sphNList(Y, tList, pList=[0]):
             Ytp.append(Y.evalf(subs={theta:t,phi:p}))
 
     return np.array(Ytp)
+
+
+# Compute states per demo notebook, https://phockett.github.io/Quantum-Beat_Photoelectron-Imaging_Spectroscopy_of_Xe_in_the_VUV/4.01_hyperfine_beats_modelling_060624.html
+def computeModel():
+    """
+    Calculate 1-photon abs. and hyperfine wavepacket evolution for 129 and 131 Xe, excitation at 133nm, per experiments in:
+    
+        Forbes, R. et al. (2018) ‘Quantum-beat photoelectron-imaging spectroscopy of Xe in the VUV’, Physical Review A, 97(6), p. 063417. Available at: https://doi.org/10.1103/PhysRevA.97.063417. arXiv: http://arxiv.org/abs/1803.01081, Authorea (original HTML version): https://doi.org/10.22541/au.156045380.07795038
+    
+    TODO: may want to implement TKQ data type in ePSproc and set via setBLMs()?
+    
+    """
+    
+    #*** Set list of states, see table 1 in ref. [4]
+
+    # E values from cm-1 to J
+    Jconv = 1.6021773E-19/8065.54429
+
+    # Set states for Xe129 case
+    JF129 = np.array([[1, 0.5, 0.5, 0*Jconv],[1, 0.5, 1.5, 0.2863*Jconv]])  # Differences in cm-1
+
+    # Set states for Xe131 case
+    JF131 = np.array([[1, 1.5, 0.5, 0*Jconv],[1, 1.5, 1.5, 0.0855*Jconv],[1, 1.5, 2.5, 0.2276*Jconv]])  # Differences in cm-1
+
+    # Define intial & photon states
+    Ji = 0  # Initial |J>
+    p = (1,0)   # Coupling (photon) |1,q>
+
+    #*** Other settings
+
+    # Set t-axis, in ps
+    tIn = np.arange(0,1000,5)*1e-12
+
+    #*** 129Xe
+    # Calculate 1-photon abs. and hyperfine wavepacket evolution
+
+    # Set final state parameters by isotope
+    JFlist = JF129
+    Jf = int(JFlist[0][0]) # Final state J
+
+    # Calculate T(J)KQ following 1-photon abs.
+    TKQ = TKQpmm(Jf,Jf, Ji = Ji, p = p)
+    # print(TKQ)
+
+    # Calculate T(J;t)KQ
+    TJt = TJtKQ(JFlist,TKQ,tIn)
+
+    # Convert to Xarray & plot
+    basicXR129 = setBLMs(TJt.astype(float), t=tIn/1e-12, LMLabels=TKQ[:,0:2].astype(int), dimNames=['TKQ', 't'])
+
+    # Update some parameters for current case...
+    basicXR129 = basicXR129.unstack('TKQ').rename({'l':'K','m':'Q'}).stack({'TKQ':('K','Q')})
+    basicXR129.attrs['dataType']='TKQ'
+    basicXR129.attrs['long_name']='Irreducible tensor parameters'
+    basicXR129.name = '129Xe'
+    basicXR129.attrs['abundance'] = 0.264006  # (82)
+    basicXR129.attrs['states'] = {'JFlist':JFlist, 'Ji':Ji, 'Jf':Jf, 'p':p}
+    
+    
+    #*** 131Xe
+    # Calculate 1-photon abs. and hyperfine wavepacket evolution
+
+    # Set final state parameters by isotope
+    JFlist = JF131
+    Jf = int(JFlist[0][0]) # Final state J
+
+    # Calculate T(J)KQ following 1-photon abs.
+    TKQ = TKQpmm(Jf,Jf, Ji = Ji, p = p)
+
+    # print(TKQ)
+
+    # Calculate T(J;t)KQ
+    TJt = TJtKQ(JFlist,TKQ,tIn)
+
+    # Convert to Xarray & plot
+    basicXR131 = setBLMs(TJt.astype(float), t=tIn/1e-12, LMLabels=TKQ[:,0:2].astype(int), dimNames=['TKQ', 't'])
+
+    # Update some parameters for current case...
+    basicXR131 = basicXR131.unstack('TKQ').rename({'l':'K','m':'Q'}).stack({'TKQ':('K','Q')})
+    basicXR131.attrs['dataType']='TKQ'
+    basicXR131.attrs['long_name']='Irreducible tensor parameters'
+    basicXR131.name = '131Xe'
+    basicXR131.attrs['abundance'] = 0.212324  # (30)
+    basicXR131.attrs['states'] = {'JFlist':JFlist, 'Ji':Ji, 'Jf':Jf, 'p':p}
+    
+    return {'129Xe':basicXR129, '131Xe':basicXR131}
+
+
+# def computeModelSum(modelDict):
+#     """
+#     Compute sum over items in modelDict, weighted by abundances.
+#     """
+    
+#     sumOut = modelDict.pop()
+    
+#     for item in modelDict.items():
+        
+        
+        
