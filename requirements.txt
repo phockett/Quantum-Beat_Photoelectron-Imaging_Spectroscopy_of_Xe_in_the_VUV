@@ -22,6 +22,9 @@ xarray
 scipy
 sympy
 
+pandas
+uncertainties
+
 holoviews
 hvplot
 # pyviz   # Not sure if this is necessary, also may need pip install pyct[cmd]

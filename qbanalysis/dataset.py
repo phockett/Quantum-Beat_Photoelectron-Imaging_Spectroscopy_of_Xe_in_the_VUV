@@ -22,10 +22,45 @@ from scipy.io import loadmat
 # Processing...
 import numpy as np
 import xarray as xr
+import pandas as pd
+from uncertainties import ufloat_fromstr
 from epsproc.sphCalc import setBLMs
 
 # For renorm
 from epsproc.util.conversion import conv_BL_BLM
+
+def loadXeProps(dataPath):
+    """
+    Load some atomic properties.
+    
+    """
+    
+    # Load hyperfine spectroscopy results.
+    # As Table 1 in manuscript
+    # Note - may also need to force dtypes here...?
+    rawXeHyperfineResults = pd.read_excel(dataPath, sheet_name=1)
+
+    # Tidy up
+    # Lambda map...
+    # Works for sub-selected cols
+    # rawXeHyperfineResults[['A/MHz', 'B/MHz']].apply(lambda x: x.str.replace(' ',''))
+
+    # Fails for full DF?
+    # rawXeHyperfineResults.apply(lambda x: x.str.replace(' ','') if isinstance(x, str) else x, axis=1)
+
+    # Applymap works overall - works elementwise.
+    tidied = rawXeHyperfineResults.applymap(lambda x: x.replace(' ','') if isinstance(x, str) else x)
+    tidied = tidied.replace('-','nan(nan)')  # For uncertainties defn.
+    
+    # Convert to Uncertainties type
+    uList = ['A/MHz','B/MHz','Splitting/cm−1']
+    tidied[uList] = tidied[uList].applymap(lambda x: ufloat_fromstr(x))  # OK
+    
+    # Set index
+    tidied.set_index(['Isotope','I','F'], inplace=True)
+    
+    return tidied  #, rawXeHyperfineResults
+
 
 
 def loadFinalDataset(dataPath):
