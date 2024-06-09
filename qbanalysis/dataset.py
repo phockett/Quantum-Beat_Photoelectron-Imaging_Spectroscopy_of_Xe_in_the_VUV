@@ -12,6 +12,7 @@ import typer
 from loguru import logger
 from tqdm import tqdm
 
+import qbanalysis as qb
 from qbanalysis.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 
 app = typer.Typer()
@@ -29,17 +30,46 @@ from epsproc.sphCalc import setBLMs
 # For renorm
 from epsproc.util.conversion import conv_BL_BLM
 
-def loadXeProps(dataPath):
+def setDataPaths(dataPath = None, default = 'main'):
     """
-    Load some atomic properties.
+    Set expected data paths, or override.
+    
+    This is currently set for:
+    
+    - /data: main dataPath used for downloads etc., but not in GH repo.
+    - /dataLocal: extra things that are in GH repo.
     
     """
+    
+    if dataPath is None:
+        if default == 'main':
+            dataPath = Path(qb.__path__[0]).parent/'data'
+            
+        else:
+            dataPath = Path(qb.__path__[0]).parent/'dataLocal'
+
+    return dataPath
+
+
+def loadXeProps(dataPath = None, displayDF = True):
+    """
+    Load some atomic properties and convert to Pandas DF.
+    
+    """
+    
+    # Check/set path
+    dataPath = setDataPaths(dataPath, default='local')
+    
+    if dataPath.is_dir():
+        dataPath = dataPath/'Xe_data_table_fixedFractions.ods'
     
     # Load hyperfine spectroscopy results.
     # As Table 1 in manuscript
     # Note - may also need to force dtypes here...?
     rawXeHyperfineResults = pd.read_excel(dataPath, sheet_name=1)
 
+    logger.info(f"Loaded Xe data from {dataPath}.")
+    
     # Tidy up
     # Lambda map...
     # Works for sub-selected cols
@@ -58,6 +88,18 @@ def loadXeProps(dataPath):
     
     # Set index
     tidied.set_index(['Isotope','I','F'], inplace=True)
+  
+    # NOTE - this returns styler object, not raw DF.
+    # ALSO: changes display style for cols (D.P.)
+#     try:
+#         tidied = tidied.style.set_caption("Xe measured level splittings and the hyperfine constants determined. Statistical uncertainty estimates are given for the measurements. (See manuscript for details).")
+#     except:
+#         pass
+        
+    if displayDF:
+        print("\n**Xe measured level splittings and the hyperfine constants.**\nStatistical uncertainty estimates are given for the measurements. (See manuscript for details).")
+        display(tidied)
+    
     
     return tidied  #, rawXeHyperfineResults
 

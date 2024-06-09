@@ -23,6 +23,7 @@ scipy
 sympy
 
 pandas
+odfpy
 uncertainties
 
 holoviews
