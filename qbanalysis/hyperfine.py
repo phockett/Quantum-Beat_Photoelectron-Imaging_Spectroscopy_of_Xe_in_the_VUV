@@ -11,8 +11,28 @@ Adapted from the Quantum Metrology with Photoelectrons Alignment notebooks, http
 import numpy as np
 import matplotlib.pyplot as plt
 from sympy import *
-from sympy.physics.wigner import wigner_3j, wigner_6j
+
 from scipy.constants import hbar
+
+from loguru import logger
+
+try:
+    from uncertainties import unumpy
+    
+    logger.info("Using uncertainties modules, Sympy maths functions will be forced to float outputs.")
+    
+    # Settings required for uncertainties to work in existing routines below...
+    cosLocal = unumpy.cos
+    
+    from sympy.physics import wigner
+    wigner_3j = lambda *args: float(wigner.wigner_3j(*args))
+    wigner_6j = lambda *args: float(wigner.wigner_6j(*args))
+        
+except ImportError:
+    # Use non-uncertainties funcs
+    cosLocal = np.cos
+    from sympy.physics.wigner import wigner_3j, wigner_6j
+
 
 from epsproc.sphCalc import setBLMs
 
@@ -77,7 +97,7 @@ def GJtBasic(J,t,K,I,F,EF):
     # Loop over pairs from a list of F states and energies
     for n1 in range(0,len(F),1):
         for n2 in range(0,len(F),1): 
-            Gterm = (2*F[n2]+1)*(2*F[n1]+1)*(wigner_6j(J,F[n2],I,F[n1],J,K)**2)*np.cos((EF[n2] - EF[n1])*t)
+            Gterm = (2*F[n2]+1)*(2*F[n1]+1)*(wigner_6j(J,F[n2],I,F[n1],J,K)**2)*cosLocal((EF[n2] - EF[n1])*t)
             
             G = np.add(G,Gterm)  # Allows for vector G addition
     
@@ -108,12 +128,16 @@ def GJtList(JFlist,K,t):
     # Set params assumed to be universal
     J = JFlist[0][0]
     I = JFlist[0][1]
+    
+    # Check if uncertainties are set
+#     if isinstance(JFlist[0][3],uncertainties.core.AffineScalarFunc):
+#         cosFunc = 
 
     for n1 in range(0,JFlist.shape[0],1):
         for n2 in range(0,JFlist.shape[0],1): 
             
-            # Calculate (2*Fp+1)*(2*F+1)*(wigner_6j(J,Fp,I,F,J,K)**2)*np.cos((EFp - EF)*t/hbar) using terms from input list
-            Gterm = (2*JFlist[n2][2]+1)*(2*JFlist[n1][2]+1)*(wigner_6j(J,JFlist[n2][2],I,JFlist[n1][2],J,K)**2)*np.cos(((JFlist[n2][3] - JFlist[n1][3])*t)/hbar)
+            # Calculate (2*Fp+1)*(2*F+1)*(wigner_6j(J,Fp,I,F,J,K)**2)*cos((EFp - EF)*t/hbar) using terms from input list
+            Gterm = (2*JFlist[n2][2]+1)*(2*JFlist[n1][2]+1)*(wigner_6j(J,JFlist[n2][2],I,JFlist[n1][2],J,K)**2)*cosLocal(((JFlist[n2][3] - JFlist[n1][3])*t)/hbar)
             
             G = np.add(G,Gterm)
                 
