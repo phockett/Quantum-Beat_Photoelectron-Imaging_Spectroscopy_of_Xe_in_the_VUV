@@ -71,7 +71,7 @@ def loadXeProps(dataPath = None, displayDF = True):
     logger.info(f"Loaded Xe data from {dataPath}.")
     
     # Tidy up
-    # Lambda map...
+    # Lambda map... e.g. https://stackoverflow.com/a/68587174
     # Works for sub-selected cols
     # rawXeHyperfineResults[['A/MHz', 'B/MHz']].apply(lambda x: x.str.replace(' ',''))
 
@@ -87,7 +87,7 @@ def loadXeProps(dataPath = None, displayDF = True):
     tidied[uList] = tidied[uList].applymap(lambda x: ufloat_fromstr(x))  # OK
     
     # Set index
-    tidied.set_index(['Isotope','I','F'], inplace=True)
+    tidied.set_index(['Isotope','I','F',"F′"], inplace=True)
   
     # NOTE - this returns styler object, not raw DF.
     # ALSO: changes display style for cols (D.P.)
