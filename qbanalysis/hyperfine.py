@@ -23,7 +23,7 @@ from epsproc.plot import hvPlotters
 # For uncertainties, alias some functions if used.
 # Also set flag for use later.
 try:
-    from uncertainties import unumpy
+    from uncertainties import unumpy, ufloat_fromstr
     
     logger.info("Using uncertainties modules, Sympy maths functions will be forced to float outputs.")
     
@@ -405,11 +405,17 @@ def sphNList(Y, tList, pList=[0]):
 
 
 # Compute states per demo notebook, https://phockett.github.io/Quantum-Beat_Photoelectron-Imaging_Spectroscopy_of_Xe_in_the_VUV/4.01_hyperfine_beats_modelling_060624.html
-def computeModel(xeProps=None):
+def computeModel(xeProps=None, tUn=None):
     """
     Calculate 1-photon abs. and hyperfine wavepacket evolution for 129 and 131 Xe, excitation at 133nm, per experiments in:
     
         Forbes, R. et al. (2018) ‘Quantum-beat photoelectron-imaging spectroscopy of Xe in the VUV’, Physical Review A, 97(6), p. 063417. Available at: https://doi.org/10.1103/PhysRevA.97.063417. arXiv: http://arxiv.org/abs/1803.01081, Authorea (original HTML version): https://doi.org/10.22541/au.156045380.07795038
+    
+    Method mainly follows the Alignment-3 notebook (https://github.com/phockett/Quantum-Metrology-with-Photoelectrons/blob/master/Alignment/Alignment-3.ipynb).
+    
+    Adapted to use either direct state settings for Xe (hard-coded below), or passed `xeProps` data (Pandas), as defined in qbanalysis.dataset.loadXeProps().
+    
+    `tUn` sets uncertainty for t-axis in calcs. If not set will default to FWHM = 170fs, sigma ~ 100fs, from experimental case.
     
     TODO: may want to implement TKQ data type in ePSproc and set via setBLMs()?
     
@@ -419,7 +425,25 @@ def computeModel(xeProps=None):
 
     # E values from cm-1 to J
     Jconv = 1.6021773E-19/8065.54429
+    
+    # For Xe case single J value only
     J = 1
+    
+    #*** Define intial & photon states
+    Ji = 0  # Initial |J>
+    p = (1,0)   # Coupling (photon) |1,q>
+
+    #*** Set t-axis, in ps
+    if unFlag:
+        if tUn is None:
+            tXC = 0.17   # Experimental cross-correlation = 170fs, should be FWHM... TBC...
+            tUn = tXC/2*np.sqrt(2*np.log(2))  # sigma Txc - use as uncertainty on t?  ~0.1ps
+            
+        tIn = unumpy.uarray(np.arange(0,1000,5)*1e-12, tUn*np.ones(200)*1e-12)
+        
+    else:
+        tIn = np.arange(0,1000,5)*1e-12
+    
     #*** Direct state settings
     if xeProps is None:
         # Set states for Xe129 case
@@ -428,8 +452,10 @@ def computeModel(xeProps=None):
         # Set states for Xe131 case
         JF131 = np.array([[1, 1.5, 0.5, 0*Jconv],[1, 1.5, 1.5, 0.0855*Jconv],[1, 1.5, 2.5, 0.2276*Jconv]])  # Differences in cm-1
 
+        
+    #*** Set states from xeProps (inc. uncertainties)
     else:
-        #*** Set states from xeProps (inc. uncertainties)
+        
         # MESSY/UGLY!
         # From PD include uncertainties
         statesIn = xeProps.index[0]
@@ -448,7 +474,7 @@ def computeModel(xeProps=None):
             # With unpack - works, but not quite correct for desired states
             # JF131.append([1,*statesIn[1:-1],xeProps.loc[statesIn]['Splitting/cm−1']*Jconv])
 
-            print(statesIn)
+            # print(statesIn)
             I, F, Fp = statesIn[1:]  #[1:-1]
             if Fp == 1.5:
                 pass
@@ -461,16 +487,6 @@ def computeModel(xeProps=None):
         JF131 = np.array(JF131)
         # JF131 = np.array([[1, 1.5, 0.5, 0*Jconv],JF131[0:-1]])
 
-
-
-    #*** Define intial & photon states
-    Ji = 0  # Initial |J>
-    p = (1,0)   # Coupling (photon) |1,q>
-
-    #*** Other settings
-
-    # Set t-axis, in ps
-    tIn = np.arange(0,1000,5)*1e-12
 
     #*** 129Xe
     # Calculate 1-photon abs. and hyperfine wavepacket evolution
@@ -486,7 +502,7 @@ def computeModel(xeProps=None):
     # Calculate T(J;t)KQ
     TJt = TJtKQ(JFlist,TKQ,tIn)
 
-    # Convert to Xarray & plot
+    # Convert to Xarray
     if unFlag:
         basicXR129 = setBLMs(TJt, t=tIn/1e-12, LMLabels=TKQ[:,0:2].astype(int), dimNames=['TKQ', 't'])   # OK with uncertainties
     else:
@@ -497,7 +513,6 @@ def computeModel(xeProps=None):
     basicXR129.attrs['dataType']='TKQ'
     basicXR129.attrs['long_name']='Irreducible tensor parameters'
     basicXR129.name = '129Xe'
-    basicXR129.attrs['abundance'] = 0.264006  # (82)
     basicXR129.attrs['states'] = {'JFlist':JFlist, 'Ji':Ji, 'Jf':Jf, 'p':p}
     basicXR129.attrs['uncertainties'] = unFlag
     
@@ -517,7 +532,7 @@ def computeModel(xeProps=None):
     # Calculate T(J;t)KQ
     TJt = TJtKQ(JFlist,TKQ,tIn)
 
-    # Convert to Xarray & plot
+    # Convert to Xarray
     if unFlag:
         basicXR131 = setBLMs(TJt, t=tIn/1e-12, LMLabels=TKQ[:,0:2].astype(int), dimNames=['TKQ', 't'])
     else:
@@ -532,35 +547,54 @@ def computeModel(xeProps=None):
     basicXR131.attrs['states'] = {'JFlist':JFlist, 'Ji':Ji, 'Jf':Jf, 'p':p}
     basicXR131.attrs['uncertainties'] = unFlag
     
+    # Set natural abundances
+    # Source: https://en.wikipedia.org/wiki/Isotopes_of_xenon#List_of_isotopes
+    if unFlag:
+        basicXR129.attrs['abundance'] = ufloat_fromstr('0.264006(82)')
+        basicXR131.attrs['abundance'] = ufloat_fromstr('0.212324(30)')
+    else:
+        basicXR129.attrs['abundance'] = 0.264006  # (82)
+        basicXR131.attrs['abundance'] = 0.212324  # (30)
+    
     return {'129Xe':basicXR129, '131Xe':basicXR131}
 
 
-def computeModelSum(modelDict):
+def computeModelSum(modelDict, renormFlag = True):
     """
     Compute sum over items in modelDict, weighted by abundances.
     """
+    
     n=0
+    renorm = 0
+    
     for k,v in modelDict.items():
         if n==0:
             components = {'sum':xr.zeros_like(v)}
         
         components[k]=(v * v.attrs['abundance'])
-        
         components['sum'] = components['sum'] + components[k]
+        
+        # Renorm by total pop
+        renorm = renorm + v.attrs['abundance']
         
         n=n+1
     
+    if renormFlag:
+        components['sum'] = components['sum']/renorm
+    
     components['sum'].name = 'sum'
-    components['sum'].attrs = {'data':'sum'}
+    components['sum'].attrs = {'data':'sum', 'renormFlag':renormFlag, 'renorm':renorm}
     
     return components
         
     
 # For uncertainties case, function to split XR data
-def splitUncertaintiesToDataset(dataIn):
+def splitUncertaintiesToDataset(dataIn, setTNominal = True):
     """
     For Xarray with Uncertainties, build dataset and split on nominal and uncertainty values.
     Useful for plotting.
+    
+    If `setTNominal=True`, then also replace t-coordinate with `unumpy.nominal_values(t)`
     
     """
     
@@ -575,18 +609,23 @@ def splitUncertaintiesToDataset(dataIn):
     dataUn.values = unumpy.std_devs(dataIn)
     dataUn.name = f"{dataIn.name}_std"
     
-    
     DS = dataNom.to_dataset()
     DS = DS.assign(dataUn.to_dataset())
+    
+    # Replace t coords?
+    if setTNominal:
+        DS = DS.assign_coords({"t":unumpy.nominal_values(DS.t)})
     
     return DS
 
 
-def plotHyperfineModel(dataIn):
+def plotHyperfineModel(dataIn, **kwargs):
     """
     Holoviews plot from model data.
     
     If data has uncertainties, plot with spread.
+    
+    kwargs are passed to hv.opts()
     """
 
     if unFlag:
@@ -595,9 +634,9 @@ def plotHyperfineModel(dataIn):
     # hvDS = hvDS.reduce(['component'], np.mean, spreadfn=np.std)
     # hv.Curve(errors) * hv.ErrorBars(errors)
     
-        return hvDS.to(hvPlotters.hv.Spread, kdims = ['t']).overlay(['K','Q']) * hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(['K','Q'])
+        return hvDS.to(hvPlotters.hv.Spread, kdims = ['t']).overlay(['K','Q']).opts(title = dataIn.name, **kwargs) * hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(['K','Q']).opts(**kwargs)
     
     else:
         hvDS = hvPlotters.hv.Dataset(dataIn.unstack())
-        return hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(['K','Q'])
+        return hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(['K','Q']).opts(title = dataIn.name, **kwargs)
     
