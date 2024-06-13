@@ -511,7 +511,7 @@ def computeModel(xeProps=None, tUn=None):
     # Update some parameters for current case...
     basicXR129 = basicXR129.unstack('TKQ').rename({'l':'K','m':'Q'}).stack({'TKQ':('K','Q')})
     basicXR129.attrs['dataType']='TKQ'
-    basicXR129.attrs['long_name']='Irreducible tensor parameters'
+    basicXR129.attrs['long_name']='Irreducible tensor parameters'  # Remove "long_name" attribs, can be an issue for multiple overlay plots.
     basicXR129.name = '129Xe'
     basicXR129.attrs['states'] = {'JFlist':JFlist, 'Ji':Ji, 'Jf':Jf, 'p':p}
     basicXR129.attrs['uncertainties'] = unFlag
@@ -541,7 +541,7 @@ def computeModel(xeProps=None, tUn=None):
     # Update some parameters for current case...
     basicXR131 = basicXR131.unstack('TKQ').rename({'l':'K','m':'Q'}).stack({'TKQ':('K','Q')})
     basicXR131.attrs['dataType']='TKQ'
-    basicXR131.attrs['long_name']='Irreducible tensor parameters'
+    basicXR131.attrs['long_name']='Irreducible tensor parameters' # Remove "long_name" attribs, can be an issue for multiple overlay plots.
     basicXR131.name = '131Xe'
     basicXR131.attrs['abundance'] = 0.212324  # (30)
     basicXR131.attrs['states'] = {'JFlist':JFlist, 'Ji':Ji, 'Jf':Jf, 'p':p}
@@ -603,11 +603,18 @@ def splitUncertaintiesToDataset(dataIn, setTNominal = True):
     dataNom.values = unumpy.nominal_values(dataIn)
     # dataNom.name = f"{dataIn.name}_nom"
     
+    # Remove "long_name" attribs if present, can be an issue for multiple overlay plots.
+    if 'long_name' in dataNom.attrs.keys():
+        dataNom.attrs.pop('long_name')
     
     # Set uncertainties/std. devs.
     dataUn = dataIn.copy()
     dataUn.values = unumpy.std_devs(dataIn)
     dataUn.name = f"{dataIn.name}_std"
+    
+    # Remove "long_name" attribs if present, can be an issue for multiple overlay plots.
+    if 'long_name' in dataUn.attrs.keys():
+        dataUn.attrs.pop('long_name')
     
     DS = dataNom.to_dataset()
     DS = DS.assign(dataUn.to_dataset())
@@ -615,6 +622,8 @@ def splitUncertaintiesToDataset(dataIn, setTNominal = True):
     # Replace t coords?
     if setTNominal:
         DS = DS.assign_coords({"t":unumpy.nominal_values(DS.t)})
+        
+    
     
     return DS
 
