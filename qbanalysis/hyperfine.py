@@ -405,7 +405,7 @@ def sphNList(Y, tList, pList=[0]):
 
 
 # Compute states per demo notebook, https://phockett.github.io/Quantum-Beat_Photoelectron-Imaging_Spectroscopy_of_Xe_in_the_VUV/4.01_hyperfine_beats_modelling_060624.html
-def computeModel(xeProps=None, tUn=None):
+def computeModel(xeProps=None, tIn=None, tUn=None):
     """
     Calculate 1-photon abs. and hyperfine wavepacket evolution for 129 and 131 Xe, excitation at 133nm, per experiments in:
     
@@ -433,16 +433,17 @@ def computeModel(xeProps=None, tUn=None):
     Ji = 0  # Initial |J>
     p = (1,0)   # Coupling (photon) |1,q>
 
-    #*** Set t-axis, in ps
-    if unFlag:
-        if tUn is None:
-            tXC = 0.17   # Experimental cross-correlation = 170fs, should be FWHM... TBC...
-            tUn = tXC/2*np.sqrt(2*np.log(2))  # sigma Txc - use as uncertainty on t?  ~0.1ps
-            
-        tIn = unumpy.uarray(np.arange(0,1000,5)*1e-12, tUn*np.ones(200)*1e-12)
-        
-    else:
-        tIn = np.arange(0,1000,5)*1e-12
+    #*** Set t-axis, in ps, if not passed
+    if tIn is None:
+        if unFlag:
+            if tUn is None:
+                tXC = 0.17   # Experimental cross-correlation = 170fs, should be FWHM... TBC...
+                tUn = tXC/2*np.sqrt(2*np.log(2))  # sigma Txc - use as uncertainty on t?  ~0.1ps
+
+            tIn = unumpy.uarray(np.arange(0,1000,5)*1e-12, tUn*np.ones(200)*1e-12)
+
+        else:
+            tIn = np.arange(0,1000,5)*1e-12
     
     #*** Direct state settings
     if xeProps is None:
