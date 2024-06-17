@@ -563,6 +563,8 @@ def computeModel(xeProps=None, tIn=None, tUn=None):
 def computeModelSum(modelDict, renormFlag = True):
     """
     Compute sum over items in modelDict, weighted by abundances.
+    
+    Return components dict and Xarray versions.
     """
     
     n=0
@@ -586,7 +588,7 @@ def computeModelSum(modelDict, renormFlag = True):
     components['sum'].name = 'sum'
     components['sum'].attrs = {'data':'sum', 'renormFlag':renormFlag, 'renorm':renorm}
     
-    return components
+    return components, stackModelToDA(components)
 
 
 def stackModelToDA(modelDict, stackDim='Isotope'):
@@ -654,14 +656,17 @@ def plotHyperfineModel(dataIn, plotSpread = True,
     
     If data has uncertainties, extract nominal values and plot with spread (or pass `plotSpread = False` to skip).
     
+    If overlay = None, overlay(['K','Q','Isotope']) will be applied to plot. Pass dims to override.
+    
     kwargs are passed to hv.opts()
     """
 
     if overlay is None:
-        overlay = ['K','Q']
+        overlay = ['K','Q']  # Default case, note no dim checks here.
         # if 'TKQ' in dataIn.dims:
         #     overlay = ['K','Q']
         
+        # Also overlay isotope dim if present
         if 'Isotope' in dataIn.dims:
             overlay.append('Isotope')
         
