@@ -587,6 +587,25 @@ def computeModelSum(modelDict, renormFlag = True):
     components['sum'].attrs = {'data':'sum', 'renormFlag':renormFlag, 'renorm':renorm}
     
     return components
+
+
+def stackModelToDA(modelDict, stackDim='Isotope'):
+    """
+    Stack dictionary of Xarrays to new dataarray or dataset.
+    
+    If stackDim is not in input arrays, it will be added.
+    """
+    
+    # Concat from keys
+    if stackDim in next(iter(modelDict.values())).dims:
+        xrDA = xr.concat([modelDict[k] for k in modelDict.keys()], stackDim)
+    
+    # Create stackDim if missing & concat
+    # NOTE: assume stackDim = key in this case.
+    else:
+        xrDA = xr.concat([modelDict[k].expand_dims({stackDim:[k]}) for k in modelDict.keys()], stackDim)
+    
+    return xrDA
         
     
 # For uncertainties case, function to split XR data
@@ -623,30 +642,46 @@ def splitUncertaintiesToDataset(dataIn, setTNominal = True):
     # Replace t coords?
     if setTNominal:
         DS = DS.assign_coords({"t":unumpy.nominal_values(DS.t)})
-        
-    
-    
+           
     return DS
 
 
-def plotHyperfineModel(dataIn, **kwargs):
+def plotHyperfineModel(dataIn, plotSpread = True,
+                       overlay = None,
+                       **kwargs):
     """
     Holoviews plot from model data.
     
-    If data has uncertainties, plot with spread.
+    If data has uncertainties, extract nominal values and plot with spread (or pass `plotSpread = False` to skip).
     
     kwargs are passed to hv.opts()
     """
 
+    if overlay is None:
+        overlay = ['K','Q']
+        # if 'TKQ' in dataIn.dims:
+        #     overlay = ['K','Q']
+        
+        if 'Isotope' in dataIn.dims:
+            overlay.append('Isotope')
+        
+    
     if unFlag:
         DS = splitUncertaintiesToDataset(dataIn)
         hvDS = hvPlotters.hv.Dataset(DS.unstack())
     # hvDS = hvDS.reduce(['component'], np.mean, spreadfn=np.std)
     # hv.Curve(errors) * hv.ErrorBars(errors)
+    else:
+        hvDS = hvPlotters.hv.Dataset(dataIn.unstack())
     
-        return hvDS.to(hvPlotters.hv.Spread, kdims = ['t']).overlay(['K','Q']).opts(title = dataIn.name, **kwargs) * hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(['K','Q']).opts(**kwargs)
+    
+    if plotSpread:
+        return hvDS.to(hvPlotters.hv.Spread, kdims = ['t']).overlay(overlay).opts(title = dataIn.name, **kwargs) * hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(overlay).opts(**kwargs)
     
     else:
         hvDS = hvPlotters.hv.Dataset(dataIn.unstack())
-        return hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(['K','Q']).opts(title = dataIn.name, **kwargs)
+        return hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(overlay).opts(title = dataIn.name, **kwargs)
     
+
+    
+# def plotHyperfineModelComparison(
