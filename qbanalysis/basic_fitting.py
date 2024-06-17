@@ -168,15 +168,23 @@ def extractABParams(xePropsFit):
     # Add 129 case back in
     # Note phase = -1 by convention, since F<F' - now included in dE calc directly
     phase =-1
-    data129 = dataCols.loc[dataCols['Isotope']==129]
     
-    # This works, but always throwing PD warning?
+    # This works, but always throwing PD warning to use .loc. Not sure why.
+    # data129 = dataCols.loc[dataCols['Isotope']==129]
     # data129.loc[data129['Isotope']==129,'A/MHz']= data129['Splitting/cm−1']/data129['F′'] * cmToMHz
-    cols = data129['Isotope']==129
-    data129.loc[cols,'A/MHz'] = data129.loc[cols,'Splitting/cm−1']/data129.loc[cols,'F′'] * cmToMHz * phase
+    # cols = data129['Isotope']==129
+    # data129.loc[cols,'A/MHz'] = data129.loc[cols,'Splitting/cm−1']/data129.loc[cols,'F′'] * cmToMHz * phase
     # data129.loc[cols,'dE'] = data129.loc[cols,'F′'] * data129.loc[cols,'A/MHz'] * 1/cmToMHz
     
     # v2, with dEcalc generalised...
+    # Also reworked PD assignment, seems better using full DF? Something about single-value selection/series...? BUT THIS IS UGLY...
+    Iind = dataCols['Isotope']
+    data129 = dataCols.loc[Iind==129]
+    dataCols.loc[Iind==129,'A/MHz']=data129['Splitting/cm−1']/data129['F′'] * cmToMHz * phase
+    # data129.loc[cols,'A/MHz'] = data129.loc[cols,'Splitting/cm−1']/data129.loc[cols,'F′'] * cmToMHz * phase
+    # data129 = dEcalc(data129, data129['A/MHz'], np.nan)
+    # Update data129 and update dE
+    data129 = dataCols.loc[Iind==129]
     data129 = dEcalc(data129, data129['A/MHz'], np.nan)
     
     # data129.loc[data129.columns['A/MHz']]
