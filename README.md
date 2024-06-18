@@ -6,6 +6,8 @@
 
 Exploration and analysis work for "Quantum-beat photoelectron-imaging spectroscopy of Xe in the VUV" manuscript and follow-up work.
 
+[HTML version on Github Pages.](https://phockett.github.io/Quantum-Beat_Photoelectron-Imaging_Spectroscopy_of_Xe_in_the_VUV)
+
 ## Project Organization
 
 ```
