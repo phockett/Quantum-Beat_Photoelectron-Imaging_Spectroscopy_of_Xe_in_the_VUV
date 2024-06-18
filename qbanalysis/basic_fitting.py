@@ -64,7 +64,13 @@ def setParams(xePropsIn, newVals, fitParamsCol = 'Splitting/cm−1'):
     # Set splittings
     # fitParamsCol = 'Splitting/cm−1'
     xePropsUpdated = xePropsIn.copy()
-    xePropsUpdated[fitParamsCol] = newVals
+    # xePropsUpdated[fitParamsCol] = newVals
+    
+    if isinstance(newVals,pd.DataFrame):
+        xePropsUpdated[fitParamsCol] = newVals[fitParamsCol] #.values # Use values to ignore index?
+                                                                    # This allows for unstacked > stacked case lazy assignmnet!
+    else:
+        xePropsUpdated[fitParamsCol] = newVals
     
     return xePropsUpdated
 
@@ -155,7 +161,7 @@ def extractABParams(xePropsFit):
 
     fitOut = scipy.optimize.least_squares(dEcalcWrapperScipy, x0in, bounds = ([0,-100],[2500,100]),
                                           kwargs = {'xeDataInPD':data131},
-                                          verbose = 0,
+                                          verbose = 1,
                                           xtol=1e-12,ftol=1e-12,gtol=1e-18)
     
     # Set final results
@@ -190,8 +196,13 @@ def extractABParams(xePropsFit):
     # data129.loc[data129.columns['A/MHz']]
     # dF = xeData.F - xeData['F′']
     dataOut = pd.concat([data129,dataFit])
+    dataOut.set_index(['Isotope','I','F',"F′"], inplace=True)
     
-    return dataOut
+    # Reformat based on input?
+    xeUpdated = setParams(xePropsFit, dataOut, fitParamsCol = 'A/MHz')
+    xeUpdated = setParams(xeUpdated, dataOut, fitParamsCol = 'B/MHz')
+    
+    return xeUpdated
 
 
 # def extractABParams(xePropsFit):
