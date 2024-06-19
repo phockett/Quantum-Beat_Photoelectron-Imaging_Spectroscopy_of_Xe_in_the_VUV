@@ -81,11 +81,14 @@ def setParams(xePropsIn, newVals, fitParamsCol = 'Splitting/cm−1'):
 # trange=[0,800]  GOOD! Lower overall intensity than [0,500] case.
 # trange=[0,1000]  GOOD! Lower overall intensity than [0,500] case.
 # trange=None  OK, but t<0 data messes things up a bit.
-def calcBasicFitModel(xData, xePropsFit = None, dataDict = None, fitFlag=True, trange=[0,1000]):
+def calcBasicFitModel(xData, xePropsFit = None, dataDict = None, trange=[0,1000],
+                      fitFlag=True, returnType = 'minimal'):
     """
     Calc model and residual for Scipy fitting.
     
     Set fitFlag=False to return all model results.
+    
+    Set returnType = 'full' to return all locals for futher use. (Default = 'minimal'.)
     """
     
     # Update fit params
@@ -113,6 +116,7 @@ def calcBasicFitModel(xData, xePropsFit = None, dataDict = None, fitFlag=True, t
     
     if fitFlag:
         return unumpy.nominal_values(res.values)
+    
     else:
         
         # Fix splitting value for 1.5,2.5 (derived case)
@@ -121,7 +125,11 @@ def calcBasicFitModel(xData, xePropsFit = None, dataDict = None, fitFlag=True, t
         dataCol = 'Splitting/cm−1'
         xePropsFit.loc[(iso,1.5,2.5,1.5), dataCol] = xePropsFit.loc[(iso,1.5,2.5,0.5), dataCol] - xePropsFit.loc[(iso,1.5,1.5,0.5), dataCol]
         
-        return xePropsFit, modelDict, modelSum, modelIn, dataIn, res
+        if returnType == 'minimal':
+            return xePropsFit, modelDict, modelSum, modelIn, dataIn, res
+        
+        elif returnType == 'full':
+            return locals()
 
     
 def compareResults(xeProps, xePropsFit, fitParamsCol = 'Splitting/cm−1'):
