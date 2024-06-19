@@ -684,7 +684,7 @@ def plotHyperfineModel(dataIn, plotSpread = True,
         return hvDS.to(hvPlotters.hv.Spread, kdims = ['t']).overlay(overlay).opts(title = dataIn.name, **kwargs) * hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(overlay).opts(**kwargs)
     
     else:
-        hvDS = hvPlotters.hv.Dataset(dataIn.unstack())
+        # hvDS = hvPlotters.hv.Dataset(dataIn.unstack())
         return hvDS.to(hvPlotters.hv.Curve, kdims = ['t']).overlay(overlay).opts(title = dataIn.name, **kwargs)
     
 
