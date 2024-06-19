@@ -15,6 +15,7 @@ import xarray as xr
 import lmfit
 from lmfit import minimize, Parameters
 from qbanalysis.basic_fitting import calcBasicFitModel
+from qbanalysis.hyperfine import splitUncertaintiesToDataset
 
 from loguru import logger
 
@@ -263,3 +264,76 @@ def pdParamsReplaceFromMap(df, pdMap, params, dataCol = 'Splitting/cm−1'):
     
     
 #*** Functions for fitting
+
+
+
+def residualAdv(model,dataIn, dataUn = None):
+    """
+    Advanced model residual - use advanced model, and also uncertainties-weighted if present.
+    
+    """
+    
+    model.name = 'model'
+    modelDS = splitUncertaintiesToDataset(model)
+    modelDS = modelDS.assign_coords({'t':modelDS['t'].values.astype(int)})  # Force coords to avoid float comparison issues.
+    
+    # TODO: should check for Uncertainties data type here...?
+    dataIn.name = 'data'
+    dataDS = splitUncertaintiesToDataset(dataIn)
+    dataDS = dataDS.assign_coords({'t':dataDS['t'].values.astype(int)})
+    
+    # Uncertainties - use data_std if present, skip if zero.
+    # Use passed data if provided
+    res = (dataDS['data'] - modelDS['model'])
+    thres = 1e-10
+    if (dataUn is None) and (dataDS['data_std'].max() < thres):
+        pass
+    elif dataDS['data_std'].max() > thres:
+        res = res/dataDS['data_std']
+    else:
+        res = res/dataUn
+        
+    res.name = 'res'
+    
+    return res, dataDS, modelDS
+    # return (dataDS-model) / uncertainty
+    
+    
+# Test lmfit with new functions...
+
+def calcAdvlmfit(params, trange=[0,1000], xePropsFit=None, dataDict=None):  #**kwargs):
+    """
+    Wrap advanced fitting model for lmfit use.
+    
+    """
+    # print(locals().keys())
+    # print(kwargs.keys())
+    
+    # Set dataIn...
+    dataIn = dataDict['BLMall'].unstack().sel({'l':[2,4]}).copy()
+    dataUn = dataDict['BLMerr'].unstack().sel({'l':[2,4]}).copy()  # Main data has uncertainties separately currently
+
+
+    calcDict = calcAdvFitModel(params, xePropsFit=xePropsFit, dataDict=dataDict)
+    # calcDict = calcAdvFitModel(params, **kwargs)
+    
+    # dataIn = dataDict['BLMall'].sel({'ROI':0,'l':4}).copy()
+    # dataIn = dataDict['BLMall'].unstack().sel({'l':[2,4]}).copy()
+    # dataUn = dataDict['BLMerr'].unstack().sel({'l':[2,4]}).copy()  # Main data has uncertainties separately currently
+
+    # if trange is not None:
+    #     modelIn = modelIn.sel(t=slice(trange[0],trange[1]))
+    #     dataIn = dataIn.sel(t=slice(trange[0],trange[1]))
+
+    # res = residual(calcDict['ionization'].squeeze(), dataIn.squeeze())
+    # res.name = 'residual'
+
+    res, dataDS, modelDS = residualAdv(calcDict['ionization'].squeeze(), dataIn.squeeze(), dataUn = dataUn)
+
+    # Optionally set trange
+    # NOTE: may also be set in calcBasicFitModel, so should be more careful here!
+    if trange is not None:
+        res = res.sel(t=slice(trange[0],trange[1]))
+        # dataIn = dataIn.sel(t=slice(trange[0],trange[1]))
+    
+    return res.values
