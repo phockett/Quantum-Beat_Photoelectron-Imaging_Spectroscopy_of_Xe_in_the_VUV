@@ -193,8 +193,8 @@ def initParams(xeProps):
 
     #*** Add additional params as required for the advanced model...
     # Lifetimes
-    params.add("tau129", value = 5000, min=0)
-    params.add("tau131", value = 5000, min=0)
+    params.add("tau129", value = 5000, min=0, max=2e5)
+    params.add("tau131", value = 5000, min=0, max=2e5)
 
     # *** Ionization model params 
     # Just set amplitude + offset for l=2,4 modelling
@@ -207,7 +207,7 @@ def initParams(xeProps):
     # This will generate channels to match experimental data
     for ROI in [0,1]:
         for item in ['amp','offset']:
-            [params.add(f"l{l}_{item}_{ROI}", value=np.random.uniform(-10,10)) for l in [2,4]]
+            [params.add(f"l{l}_{item}_{ROI}", value=np.random.uniform(-10,10), min=-10, max=10) for l in [2,4]]
 
     return params
 
