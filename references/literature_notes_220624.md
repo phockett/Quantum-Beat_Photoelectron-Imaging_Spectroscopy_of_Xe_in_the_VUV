@@ -12,6 +12,21 @@ kernelspec:
   name: python3
 ---
 
++++ {"tags": ["remove-cell"]}
+
+Added for ongoing notes and also bib testing.
+
+For configuration see:
+
+- https://jupyterbook.org/en/stable/tutorials/references.html#tutorials-references
+- https://jupyterbook.org/en/stable/content/citations.html
+- https://sphinxcontrib-bibtex.readthedocs.io/en/latest/usage.html#roles-and-directives
+- https://sphinxcontrib-bibtex.readthedocs.io/en/latest/usage.html#referencing-style
+
+Note styles configured in `_config.yml`, and also in {bibliography} directive, which can include filters and stuff too, e.g. https://jupyterbook.org/en/stable/content/citations.html#local-bibliographies
+
++++
+
 # Literature notes
 22/06/24
 

@@ -1,0 +1,9 @@
+# See https://jupytext.readthedocs.io/en/latest/config.html
+# This should apply to all subfolders...?
+# Added 22/06/24
+
+# Pair ipynb notebooks to py:percent text notebooks
+formats = "ipynb,md:myst"
+
+# Time comparison for concurrency
+outdated_text_notebook_margin = 5
