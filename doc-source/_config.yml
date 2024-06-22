@@ -26,7 +26,18 @@ latex:
 
 # Add a bibtex file so that we can create citations
 bibtex_bibfiles:
-  - references.bib
+  - references/xe_hyperfine_paper_refs_2018.bib
+  - references/xe_hyperfine_redux_2024.bib
+  
+
+# Styles... see 
+# https://jupyterbook.org/en/stable/content/citations.html#change-the-reference-style
+# https://sphinxcontrib-bibtex.readthedocs.io/en/latest/usage.html#referencing-style
+sphinx:
+  config:
+    bibtex_reference_style: author_year
+#     bibtex_bibfiles: "your_reference_file.bib"
+
 
 # Information about where the book exists on the web
 repository:
