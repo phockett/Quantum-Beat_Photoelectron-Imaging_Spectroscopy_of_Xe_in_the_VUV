@@ -42,66 +42,57 @@ Note styles configured in `_config.yml`, and also in {bibliography} directive, w
     
 - Should relate to Blum stuff for more…?
 
-
 +++
 
 {cite:ps}`Greene1982`
 
-- Universal alignment function, defines sign of alignment (with $\Delta J$), see eq. 16.
+- Universal alignment function, defines sign of alignment (with $\Delta J$), see eq. 16. (Implemented in `qbanalysis.photoionization.A0`.)
+
+$$
+A_{0}^{\mathrm{col}}(j_{i};t)=\begin{cases}
+-\frac{2}{5}+\frac{3}{5(j_{i}+1)} & t_{+1}=j_{i}+1\\
+-\frac{2}{5}+\frac{3}{5j_{i}} & t_{-1}=j_{i}-1\\
+\frac{4}{5}+\frac{3}{5j_{i}(j_{i}+1)} & t_{0}=j_{i}
+\end{cases}
+$$ (A0_alignment)
+
+Where $t_{\pm1}$ are parity favoured, $t_0$ is parity unfavoured, and $t$ denotes angular momentum transfer $j_t = \Delta j$ (not "time"!).
 
 - Hyperfine beats (eq. 22), including depolarisation, and time-integrated case (eq. 24).
 
-```{code-cell} ipython3
-def A0(ji):
-    """
-    Define "universal alignment function" per Greene & Zare 1982.
-        
-    Greene, Chris H., and Richard N Zare. 1982. 
-    “Photonization-Produced Alignment of Cd.” 
-    Physical Review A 25 (4): 2031–37. 
-    https://doi.org/10.1103/PhysRevA.25.2031.
-
-    """
-    
-    # v1 - values DON'T match Fig 1 in manuscript?
-    # return {1:-2/5 + 3/(5*(ji+1)),
-    #         -1:-2/5 + 3/(5*ji),
-    #         0:4/5 + 3/(5*ji*(ji+1))}
-    
-    # v2 - looks OK aside from J=0 terms, must be fixed in manuscript?
-    #      Fig 1 shows 1, 0 terms = 0
-    # MUST be incorrect for +1 case, since = -2/5+3/5 below, but other terms seem correct.
-    return {1:-2/5 + 3/(5*(ji+1)),
-        -1:-2/5 - 3/(5*ji),
-        0:4/5 - 3/(5*ji*(ji+1))}
-
-A0(1)
-```
 
 ```{code-cell} ipython3
-import pandas as pd
+# Calculate and plot Universal Alignment Function, per 
+#     Greene, Chris H., and Richard N Zare. 1982. 
+#     “Photonization-Produced Alignment of Cd.” 
+#     Physical Review A 25 (4): 2031–37. 
+#     https://doi.org/10.1103/PhysRevA.25.2031.
 
-pd.DataFrame.from_dict({k:[v] for k,v in A0(1).items()})
-```
-
-```{code-cell} ipython3
+from qbanalysis.photoionization import *
 import numpy as np
-pd.DataFrame.from_dict(A0(np.arange(0,10)))
+
+A0table = A0df(np.arange(0,10))
+A0table
 ```
 
 ```{code-cell} ipython3
 import hvplot.pandas 
+import holoviews as hv
 
-A0df = pd.DataFrame.from_dict(A0(np.arange(0,10)))
+# Quick plot from PD data
+A0plot = A0table.hvplot().opts(title="Universal alignment function vs. Ji, lines per dJ",show_grid=True)
 
-# A0df = A0df.replace([np.inf, -np.inf], 0)  # Replace inf with 0?
-A0df = A0df.replace([np.inf, -np.inf], np.nan)  # Replace inf with nan?
-A0df.hvplot()
+# Load ref figure (image) and create layout
+height = 600
+width = 600
+ref = hv.RGB.load_image('greene_zare_1982_fig1.png').opts(height=height,  width=width)
+layout = A0plot.opts(height=height, width=width) + ref.opts(axiswise=True, xaxis=None, yaxis=None)
+layout
 ```
+
+Note discrepancy for Ji=0 case (seems to be an error or specific choice that inf == 0, in original plot), otherwise looks good.
+
++++
 
 ```{bibliography}
-```
-
-```{code-cell} ipython3
-
 ```
