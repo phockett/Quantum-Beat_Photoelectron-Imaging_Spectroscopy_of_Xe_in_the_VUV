@@ -104,6 +104,29 @@ def loadXeProps(dataPath = None, displayDF = True):
     return tidied  #, rawXeHyperfineResults
 
 
+def loadAdvFit(dataPath = None, filename = "xeAdvFit_09-07-24_13-32-02.h5"):
+    """
+    Load data from advanced fitting notebook
+    
+    """
+        # Check/set path
+    dataPath = setDataPaths(dataPath, default='local')
+    
+    if dataPath.is_dir():
+        dataPath = dataPath/Path(filename)
+    
+    # Load data as PD
+    xePropsFit = pd.read_hdf(dataPath,key='xePropsFit')
+    xeParamsFit = pd.read_hdf(dataPath,key='xeParamsFit')
+
+    logger.info(f"Loaded Xe adv. fit data from {dataPath}.")
+    
+    # Also set dict version to match model inputs
+    paramsUDict = xeParamsFit.to_dict()['Value']
+
+    return xePropsFit, xeParamsFit, paramsUDict
+    
+
 
 def loadFinalDataset(dataPath):
     """
