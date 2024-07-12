@@ -20,7 +20,7 @@ jupyter-book
 numpy
 xarray
 scipy
-sympy==1.11.1
+sympy==1.11.1  # Note in GH builds found 1.11.3 breaks hyperfine modelling code (issue with 3js)
 lmfit
 
 pandas
@@ -33,6 +33,7 @@ hvplot
 
 h5py
 h5netcdf
+pytables   # For PD > h5
 
 ghp-import
 wget

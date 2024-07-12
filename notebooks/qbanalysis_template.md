@@ -80,7 +80,7 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 
 ```{code-cell} ipython3
 import scooby
-scooby.Report(additional=['qbanalysis','pemtk','epsproc', 'holoviews', 'hvplot', 'xarray', 'matplotlib', 'bokeh'])
+scooby.Report(additional=['qbanalysis','pemtk','epsproc', 'holoviews', 'hvplot', 'xarray', 'matplotlib', 'bokeh', 'sympy', 'pandas','uncertainties'])
 ```
 
 ```{code-cell} ipython3
