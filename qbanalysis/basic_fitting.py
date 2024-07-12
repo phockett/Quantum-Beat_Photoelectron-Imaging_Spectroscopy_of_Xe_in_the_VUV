@@ -137,7 +137,7 @@ def compareResults(xeProps, xePropsFit, fitParamsCol = 'Splitting/cm−1'):
     Create comparison table of reference and fit results.
     """
     
-    import pandas as pd
+    # import pandas as pd
     
     diffData = pd.DataFrame([xeProps[fitParamsCol], xePropsFit[fitParamsCol], xeProps[fitParamsCol]-xePropsFit[fitParamsCol]]).T
     # diffData.columns.rename({n:item for n,item in enumerate(['original','fit','diff'])})
