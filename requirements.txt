@@ -20,7 +20,7 @@ jupyter-book
 numpy
 xarray
 scipy
-sympy
+sympy==1.11.1
 lmfit
 
 pandas
