@@ -11,6 +11,7 @@ Functions for modelling hyperfine quantum beats - advanced fitting for hyperfine
 
 import numpy as np
 import xarray as xr
+import pandas as pd
 
 import lmfit
 from lmfit import minimize, Parameters
@@ -21,8 +22,9 @@ from loguru import logger
 
 # For uncertainties, alias some functions if used.
 # Also set flag for use later.
+# For Advanced case may need unumpy.exp alias?
 try:
-    from uncertainties import unumpy, ufloat_fromstr
+    from uncertainties import unumpy, ufloat_fromstr, ufloat
     
     logger.info("Using uncertainties modules, Sympy maths functions will be forced to float outputs.")
     
@@ -71,7 +73,20 @@ def calcDecays(paramDict, isoDA):
     
     # Groupby version - better...?
     # Test groupby...
-    decay = isoDA.groupby("Isotope").map(lambda x: x*np.exp(-x.t/paramDict[f"tau{x.Isotope.values.item().rstrip('Xe')}"]))
+    
+    # 24/06/24 - added uncertainties case. Needs work.
+    # Q: currently issue with return and forcing dims, but not sure why.
+    if unFlag:
+        # May need unumpy version if using Uncertainties on t or tau.
+        # This fails, "ValueError: operands could not be broadcast together with shapes (97,2) (97,) "
+        # Issue with unumpy.exp return?
+        # decay = isoDA.groupby("Isotope").map(lambda x: x*unumpy.exp(-x.t/paramDict[f"tau{x.Isotope.values.item().rstrip('Xe')}"]))
+        
+        # QUICK FIX WORKS - but ugly, assumes dims.
+        decay = isoDA.groupby("Isotope").map(lambda x: x*np.c_[unumpy.exp(-x.t/paramDict[f"tau{x.Isotope.values.item().rstrip('Xe')}"]),unumpy.exp(-x.t/paramDict[f"tau{x.Isotope.values.item().rstrip('Xe')}"])])
+                                                                                         
+    else:
+        decay = isoDA.groupby("Isotope").map(lambda x: x*np.exp(-x.t/paramDict[f"tau{x.Isotope.values.item().rstrip('Xe')}"]))
     
     decaySum = decay.sum("Isotope").expand_dims({"Isotope":['sum']})
     
@@ -261,7 +276,37 @@ def pdParamsReplaceFromMap(df, pdMap, params, dataCol = 'Splitting/cm−1'):
 
 
     return dfOut
+
+def pdDFParamsUncertainties(params, replaceS2 = True):
+    """
+    Reformat lmfit params to PD Dataframe with uncertainties.
     
+    If `replaceS2=True`, then reset s2 = s3-s1 in output (derived param).
+    
+    """
+    
+    uDict = {}
+    if unFlag:
+        # Ufloat case
+        for k,v in params.items():
+            # uDict[k] = ufloat(result.params['s0'].value, result.params['s0'].stderr)
+            uDict[k] = ufloat(v.value, v.stderr)
+            
+        # Dataframe, note wrap to array
+        # df = pd.DataFrame.from_dict({k:[v] for k,v in uDict.items()}).T
+        df = pd.DataFrame.from_dict(uDict,orient='index',columns=['Value'])            
+            
+    else:
+        for k,v in result.params.items():
+            uDict[k] = [v.value, v.stderr]
+        
+        df = pd.DataFrame.from_dict(uDict,orient='index',columns=['Value','Stderr'])
+    
+    if replaceS2:
+        df.loc['s2'] = df.loc['s3']-df.loc['s1']
+    
+    return uDict, df
+
     
 #*** Functions for fitting
 
