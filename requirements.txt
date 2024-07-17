@@ -33,7 +33,8 @@ hvplot
 
 h5py
 h5netcdf
-pytables   # For PD > h5
+# pytables   # For PD > h5, NOTE: pytables in Conda, tables in pip!
+tables
 
 ghp-import
 wget
