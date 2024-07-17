@@ -15,4 +15,5 @@ chapters:
   sections:
   - file: 4.02_hyperfine_beats_basic_fitting_140624
   - file: 4.03-redux_hyperfine_beats_adv_fitting_190624  
+- file: 5.01_qb_densityMatrix_legacy_150724
 - file: references/literature_notes_220624
