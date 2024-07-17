@@ -104,12 +104,13 @@ def loadXeProps(dataPath = None, displayDF = True):
     return tidied  #, rawXeHyperfineResults
 
 
-def loadAdvFit(dataPath = None, filename = "xeAdvFit_09-07-24_13-32-02.h5"):
+def loadAdvFit(dataPath = None, filename = "xeAdvFit.h5"):
+               # filename = "xeAdvFit_09-07-24_13-32-02.h5"):
     """
     Load data from advanced fitting notebook
     
     """
-        # Check/set path
+    # Check/set path
     dataPath = setDataPaths(dataPath, default='local')
     
     if dataPath.is_dir():

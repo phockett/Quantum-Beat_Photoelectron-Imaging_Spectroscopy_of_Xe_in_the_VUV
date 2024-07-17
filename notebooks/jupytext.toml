@@ -6,4 +6,4 @@
 formats = "ipynb,md:myst"
 
 # Time comparison for concurrency
-outdated_text_notebook_margin = 5
+outdated_text_notebook_margin = 20
