@@ -20,6 +20,9 @@ from loguru import logger
 # For hv plotting
 from epsproc.plot import hvPlotters
 
+# Pmm from TKQ, epsproc PKG version 23/07/24
+from epsproc.calc.density import densityFromSphTensor
+
 # For uncertainties, alias some functions if used.
 # Also set flag for use later.
 try:
@@ -346,6 +349,46 @@ def pJpNpJN(Jp,J,TKQ):
                 
     return Pmm
  
+    
+# Define density matrix from existing TKQ values
+# Uses existing epsproc routines
+# 18/12/24 rough version from 4.05 draft notebook
+def pmmFromQuantumBeat(calcDict, isoKeys = None):
+    """
+    Compute density matrix from TKQ tensor for quantum beat model.
+    
+    Set results to calcDict['pmm'] and calcDict['pmmUn'].
+    
+    If isoKeys = None, compute for both cases, i.e. isoKeys = ['129Xe','131Xe']
+    
+    """
+    
+    if isoKeys is None:
+        isoKeys = ['129Xe','131Xe']
+    
+    # Loop over isotopes and compute...
+    for isoKey in isoKeys:
+        # Get TKQs, and convert to density matrix
+        TKQ = calcDict['modelDict'][isoKey].copy()
+        TKQ = TKQ.rename({'TKQ':'KQ'})
+        pmm = densityFromSphTensor(TKQ)
+        
+        # Stash in calcDict
+        if not 'pmm' in calcDict.keys():
+            calcDict['pmm'] = {}
+            
+        calcDict['pmm'][isoKey] = pmm
+    
+        # May also want output from splitUncertaintiesToDataset(pmm) here...?
+        # Also had this as plotter option? TBC.
+        if not 'pmmUn' in calcDict.keys():
+            calcDict['pmmUn'] = {}
+            
+        calcDict['pmmUn'][isoKey] = splitUncertaintiesToDataset(pmm)
+        
+    # Return calcDict for clarity, although note strictly necessary as no copy here.
+    return calcDict
+
     
 #***** Spherical harmonic functions
     
