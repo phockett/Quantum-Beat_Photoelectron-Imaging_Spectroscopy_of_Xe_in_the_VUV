@@ -156,15 +156,63 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
             # 29/11/24 - allow multiple Jf/Nc for spin case. Set Jf=None for this case.
             #          - Add Nc to sumList
             # TODO: may want to allow for passing this?
-            channel = [J,None,None,None]
-            Cterms = gammaCalc.Ccalc(channel, spinWeightings=spinDict, thres=thres)
+            # channel = [J,None,None,None]
+            
+            # 14/05/25 Can now pass (single) channel, for default set iwth J
+            if channel is None:
+                channel = [J,None,None,None]
+               
+            # 14/05/25 - add dict terms for gammas to avoid recalc for multiple (fitting) runs
+            # Use tuple(channel) as key, check and create if not set
+            if not 'gamma' in calcDict.keys():
+                calcDict['gamma'] = {}
+                
+            # if 'gamma' in calcDict.keys():
+            # Create dict if missing
+            if not isoKey in calcDict['gamma'].keys():
+                calcDict['gamma'][isoKey] = {}
+
+            # Compute or set Cterms
+            if tuple(channel) in calcDict['gamma'][isoKey].keys():
+                print(f"Found channel {channel} in calcDict['gamma'][{isoKey}].")
+                # Cterms = calcDict['gamma'][isoKey][tuple(channel)]['Cterms']  # Specific terms
+                # locals().update(calcDict['gamma'][isoKey][tuple(channel)])   # Unpack to locals
+                
+                # locals unpacking seems to fail...? Test here... think I've used something similar elsewhere preivously...?
+                # Var names appear in locals().keys(), but give NameError when trying to access?
+                # CHECK PEMtk or ePSproc util functions...?
+                # d = {'a': 1, 'b': 2}
+                # locals().update(**d)
+                
+            else:
+                print(f"Computing gammas for channel {channel}, {isoKey}.")
+                Cterms = gammaCalc.Ccalc(channel, spinWeightings=spinDict, thres=thres)
+                # Calc gamma 
+                gammaPmm, lPhase, Cpmm, Cterms = gammaCalc.gammaCalc(Cterms = Cterms, denMat=pmmSub,)
+
+                calcDict['gamma'][isoKey][tuple(channel)] = {'gammaPmm': gammaPmm, 
+                                                             'lPhase': lPhase, 
+                                                             'Cpmm':Cpmm,
+                                                             'Cterms': Cterms,}
+                
+                
+
+            # locals().update(**d)
+            # print(locals().keys())
+            # print(a)
+            
+            # Just use dict in calcs below - much simpler than messing with unpacking etc.
+            gammaDict = calcDict['gamma'][isoKey][tuple(channel)]
+            
+            # Original case - just calculate
+            # Cterms = gammaCalc.Ccalc(channel, spinWeightings=spinDict, thres=thres)
 
             # Calc gamma 
-            gammaPmm, lPhase, Cpmm, Cterms = gammaCalc.gammaCalc(Cterms = Cterms, denMat=pmmSub,)
+            # gammaPmm, lPhase, Cpmm, Cterms = gammaCalc.gammaCalc(Cterms = Cterms, denMat=pmmSub,)
                                                                  # sumList = ['q','qp','Mi','Mip','Nt','Ntp','Mt','Mtp','Mc','Nc'])
 
             # Calc betas
-            betaOut, betaOutNorm = gammaCalc.betaCalc(gammaPmm, matE=matE,
+            betaOut, betaOutNorm = gammaCalc.betaCalc(gammaDict['gammaPmm'], matE=matE,
                                                   channel = channel) #, thres=1e-6) 
                                                   # cols=['l','m','matE1'])  # Cols currently hard-coded in betaCalc
                                                     # cols=['l','lam','matE1'])
@@ -179,8 +227,8 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
                                   'betaNorm':betaOutNorm,
                                   'Jf':Jf,
                                   'isoKey':isoKey,
-                                  'spinW':spinDict,
-                                  'gammaOut':(gammaPmm, lPhase, Cpmm, Cterms)}
+                                  'spinW':spinDict,}
+                                  # 'gammaOut':(gammaPmm, lPhase, Cpmm, Cterms)}  # Updated case - this is now in calcDict['gamma']
             
     return betaJ
 
