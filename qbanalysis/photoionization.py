@@ -8,6 +8,10 @@ Photoionization functions for Quantum-beat photoelectron-imaging spectroscopy of
 import pandas as pd
 import numpy as np
 
+# For blm calcs
+from qbanalysis.hyperfine import pmmFromQuantumBeat
+from epsproc.geomFunc.gamma import gammaCalc
+
 
 def A0(ji):
     """
@@ -52,7 +56,8 @@ def A0df(ji):
 #***********  Compute photoionization full model
 
 
-def blmCalc(calcDict, matE = None, isoKeys = None, JFlist = None,
+def blmCalc(calcDict, matE = None, isoKeys = None, 
+            JFlist = None, channel = None,
             thres=1e-4):
     """
     Compute photoionziation ($\beta_{L,M}$ parameters) for state-selected case including spin.
@@ -85,7 +90,14 @@ def blmCalc(calcDict, matE = None, isoKeys = None, JFlist = None,
     betaJ : dict
         Contains results per state, indexed as betaJ[isoKey][J]
         
+    
+    May 2025 v2 revisiting and updating
+    - Add optional calcs for missing terms in default case.
+                
+    Nov/Dec 2024 v1 in progress from demo notebook (4.05).
     """
+    
+
     
     # Set default keys
     if isoKeys is None:
@@ -133,8 +145,12 @@ def blmCalc(calcDict, matE = None, isoKeys = None, JFlist = None,
             Jp = Ji
 
             # pmmSub = pmmPkgDS[isoKey].sel({'J':J,'Jp':Jp})  #.sum(['K','Q'])
+            if not 'pmmUn' in calcDict.keys():
+                pmmFromQuantumBeat(calcDict)
+                
             # Version from calcDict - may want to check and call pmmFromQuantumBeat() if required.
-            pmmSub = calcDict['pmmUn'][isoKey].sel({'J':J,'Jp':Jp})
+            # NOTE - for pmmFromQuantumBeat(calcDict) with uncertainties need to subselect from dataset too!
+            pmmSub = calcDict['pmmUn'][isoKey][isoKey].sel({'J':J,'Jp':Jp})
 
             # Calc Cterms
             # 29/11/24 - allow multiple Jf/Nc for spin case. Set Jf=None for this case.
@@ -168,5 +184,28 @@ def blmCalc(calcDict, matE = None, isoKeys = None, JFlist = None,
             
     return betaJ
 
-            
+
+#*********** Fitting (uses PEMtk functionality)
+
+def blmFit(**kwargs):
+    """
+    Wrap blmCalc for use with PEMtk fitting routines, as backend function.
+    
+    For details see:
+        - Backend notes, https://pemtk.readthedocs.io/en/latest/fitting/PEMtk_fitting_backends_demo_010922.html
+        - Fitting routines source, https://pemtk.readthedocs.io/en/latest/_modules/pemtk/fit/fitClass.html#pemtkFit.afblmMatEfit
+        - General fitting routine notes, https://pemtk.readthedocs.io/en/latest/fitting/PEMtk_fitting_demo_multi-fit_tests_130621-MFtests_120822-tidy-retest.html
+        
+    Note this need to function as a backend for :py:func:`afblmMatEfit`, generally called with:
+    
+        `BetaNormX = backend(matE, **basis, thres = thres, selDims = selDims, thresDims=thresDims, basisReturn = 'BLM', **kwargs)`
+       
+    14/05/25 v1 sketching.
+    
+    """
+    
+    pass
+
+
+    
     
