@@ -58,7 +58,8 @@ def A0df(ji):
 
 def blmCalc(calcDict, matE = None, isoKeys = None, 
             JFlist = None, channel = None,
-            thres=1e-4):
+            thres=1e-4, forceCalc = False,
+            **kwargs):
     """
     Compute photoionziation ($\beta_{L,M}$ parameters) for state-selected case including spin.
     
@@ -83,6 +84,12 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
         
     thres : float, optional, default = 1e-4
         Threshold used for gammaCalc routine.
+        
+    forceCalc : bool, default = False
+        Force recalculation of gamma terms and override terms in calcDict if True.
+        
+    **kwargs : unused
+        Allow for arb arg passing for fitting wrapper.
         
         
     Returns
@@ -134,8 +141,8 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
             ## Spin weighting per Jf
             # Jf = 0.5
 
-            # Compute spin weightings for given Jf case (==Jc in function).
-            spinDict = gammaCalc.spinWeightings(selectors={'Jc':Jf})
+            # # Compute spin weightings for given Jf case (==Jc in function).
+            # spinDict = gammaCalc.spinWeightings(selectors={'Jc':Jf})
 
 
             # Subselect and sum
@@ -178,7 +185,7 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
             gKey = tuple(gKey)
 
             # Compute or set Cterms
-            if gKey in calcDict['gamma'][isoKey].keys():
+            if not forceCalc and (gKey in calcDict['gamma'][isoKey].keys()):
                 print(f"Found gKey {gKey} in calcDict['gamma'][{isoKey}].")
                 # print(f"Found channel {channel} in calcDict['gamma'][{isoKey}].")
                 # Cterms = calcDict['gamma'][isoKey][tuple(channel)]['Cterms']  # Specific terms
@@ -192,14 +199,19 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
                 
             else:
                 print(f"Computing gammas for channel {channel}, {isoKey}, Jf={Jf}.")
+                
+                # Compute spin weightings for given Jf case (==Jc in function).
+                spinDict = gammaCalc.spinWeightings(selectors={'Jc':Jf})
+            
                 Cterms = gammaCalc.Ccalc(channel, spinWeightings=spinDict, thres=thres)
                 # Calc gamma 
                 gammaPmm, lPhase, Cpmm, Cterms = gammaCalc.gammaCalc(Cterms = Cterms, denMat=pmmSub,)
 
-                calcDict['gamma'][isoKey][gKey] = {'gammaPmm': gammaPmm, 
-                                                             'lPhase': lPhase, 
-                                                             'Cpmm':Cpmm,
-                                                             'Cterms': Cterms,}
+                calcDict['gamma'][isoKey][gKey] = {'gammaPmm': gammaPmm,
+                                                     'spinDict': spinDict,
+                                                     'lPhase': lPhase, 
+                                                     'Cpmm':Cpmm,
+                                                     'Cterms': Cterms,}
                 
                 
 
@@ -233,7 +245,7 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
                                   'betaNorm':betaOutNorm,
                                   'Jf':Jf,
                                   'isoKey':isoKey,
-                                  'spinW':spinDict,
+                                  # 'spinW':spinDict,
                                   'channel':channel,
                                   'gKey':gKey}
                                   # 'gammaOut':(gammaPmm, lPhase, Cpmm, Cterms)}  # Updated case - this is now in calcDict['gamma']
@@ -243,7 +255,8 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
 
 #*********** Fitting (uses PEMtk functionality)
 
-def blmFit(**kwargs):
+def blmCalcFit(matE, basisReturn = 'Full', renorm = True, betaType = 'betaOut',  #'betaNorm'
+               **kwargs):
     """
     Wrap blmCalc for use with PEMtk fitting routines, as backend function.
     
@@ -258,10 +271,61 @@ def blmFit(**kwargs):
        
     14/05/25 v1 sketching.
     
+    basisReturn : optional, str, default = "BLM"
+    - 'BLM' return Xarray of results only.
+    - 'Full' return Xarray of results + basis set dictionary as set during the run.
+    - Note other types just return Full, this provides compatibility with existing AF fitting routines, see options at https://github.com/phockett/ePSproc/blob/56c01f0a1f3ba90c1409a32a276c241e04165638/epsproc/geomFunc/afblmGeom.py#L634
+    
     """
     
-    pass
+#     if JFlist is None:
+#         JFlist = [0.5,1.5]
+    
+    # Compute BLMs
+    # NOTE: currently need to set matE to kwarg, since this function expects matE as 1st arg.
+    # ALSO: blmCalc currently expects calcDict as 1st arg, but seems to work OK with kwarg passing in testing?  Might be dubious...
+    # betaJ = blmCalc(calcDict=kwargs['calcDict'], matE=matE, **kwargs)   # Fails - duplicate calcDict if kwarg
+    # betaJ = blmCalc(matE=matE, **kwargs)   # Seems OK if calcDict in kwargs, although suspect dodgy?
+    
+    calcDict = kwargs.pop('calcDict')  # Better arg,kwarg passing - pop calcDict, then pass in correct order.
+    betaJ = blmCalc(calcDict, matE=matE, **kwargs)
+    
+    # For fitting, sum over all channels (i.e. assume single dataset)
+    # OR: if seperable, just calc for single channel above...?
+    # for item in betaJ.keys():
+        
+    # Set params
+    betaStack = []
+    # JFsum = JFlist #  [JFlist[1]]   # Set JF cases to sum? Now just use all keys set below, but may want to allow for passing here too.
 
+    # Get results (dataframes)
+    for key in betaJ.keys():
+        for Jf in betaJ[key].keys():
+            betaStack.append(betaJ[key][Jf][betaType])
+
+    # Add dataframes
+    # For summing list of dataframes
+    # From https://stackoverflow.com/a/45983359
+    from functools import reduce
+    betaSum = reduce(lambda x, y: x.add(y, fill_value=0), betaStack)
+
+    if renorm:
+        betaSum = betaSum/betaSum.loc[0,0]
+    
+    
+    if basisReturn == 'Full':
+        return betaSum, {'calcDict':calcDict,'betaJ':betaJ, 'isoKeys':kwargs['isoKeys'], 'JFlist':kwargs['JFlist']}  #**kwargs}  # NOTE: ensure only required kwargs passed here, otherwise can get duplicates 
+        # return betaSum, {'calcDict':kwargs['calcDict'],'betaJ':betaJ} 
+        # return {'calcDict':kwargs['calcDict']}
+    
+    # Return only calcDict as basis fns. for use in fitting routines
+    elif basisReturn == "ProductBasis":
+        # return betaSum, {'calcDict':locals()['calcDict']}
+        return betaSum, {'calcDict':calcDict, 'isoKeys':kwargs['isoKeys'], 'JFlist':kwargs['JFlist']}  #**kwargs}  # NOTE: ensure only required kwargs passed here, otherwise can get duplicates
+    
+    # Default to only final BetaSum return for any other case
+    else:
+        return betaSum
 
     
     
