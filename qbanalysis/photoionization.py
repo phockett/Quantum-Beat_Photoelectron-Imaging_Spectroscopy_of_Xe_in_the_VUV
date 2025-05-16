@@ -171,10 +171,16 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
             # Create dict if missing
             if not isoKey in calcDict['gamma'].keys():
                 calcDict['gamma'][isoKey] = {}
+                
+            # Gamma key - index gamma params for reuse with channel + Jf
+            gKey = channel.copy()
+            gKey.append(Jf)
+            gKey = tuple(gKey)
 
             # Compute or set Cterms
-            if tuple(channel) in calcDict['gamma'][isoKey].keys():
-                print(f"Found channel {channel} in calcDict['gamma'][{isoKey}].")
+            if gKey in calcDict['gamma'][isoKey].keys():
+                print(f"Found gKey {gKey} in calcDict['gamma'][{isoKey}].")
+                # print(f"Found channel {channel} in calcDict['gamma'][{isoKey}].")
                 # Cterms = calcDict['gamma'][isoKey][tuple(channel)]['Cterms']  # Specific terms
                 # locals().update(calcDict['gamma'][isoKey][tuple(channel)])   # Unpack to locals
                 
@@ -185,12 +191,12 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
                 # locals().update(**d)
                 
             else:
-                print(f"Computing gammas for channel {channel}, {isoKey}.")
+                print(f"Computing gammas for channel {channel}, {isoKey}, Jf={Jf}.")
                 Cterms = gammaCalc.Ccalc(channel, spinWeightings=spinDict, thres=thres)
                 # Calc gamma 
                 gammaPmm, lPhase, Cpmm, Cterms = gammaCalc.gammaCalc(Cterms = Cterms, denMat=pmmSub,)
 
-                calcDict['gamma'][isoKey][tuple(channel)] = {'gammaPmm': gammaPmm, 
+                calcDict['gamma'][isoKey][gKey] = {'gammaPmm': gammaPmm, 
                                                              'lPhase': lPhase, 
                                                              'Cpmm':Cpmm,
                                                              'Cterms': Cterms,}
@@ -202,7 +208,7 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
             # print(a)
             
             # Just use dict in calcs below - much simpler than messing with unpacking etc.
-            gammaDict = calcDict['gamma'][isoKey][tuple(channel)]
+            gammaDict = calcDict['gamma'][isoKey][gKey]
             
             # Original case - just calculate
             # Cterms = gammaCalc.Ccalc(channel, spinWeightings=spinDict, thres=thres)
@@ -227,7 +233,9 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
                                   'betaNorm':betaOutNorm,
                                   'Jf':Jf,
                                   'isoKey':isoKey,
-                                  'spinW':spinDict,}
+                                  'spinW':spinDict,
+                                  'channel':channel,
+                                  'gKey':gKey}
                                   # 'gammaOut':(gammaPmm, lPhase, Cpmm, Cterms)}  # Updated case - this is now in calcDict['gamma']
             
     return betaJ
