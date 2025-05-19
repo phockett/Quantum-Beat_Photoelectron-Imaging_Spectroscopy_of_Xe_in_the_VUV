@@ -8,6 +8,8 @@ Photoionization functions for Quantum-beat photoelectron-imaging spectroscopy of
 import pandas as pd
 import numpy as np
 
+import xarray as xr  # Currently only for type checking, so may want to skip
+
 # For blm calcs
 from qbanalysis.hyperfine import pmmFromQuantumBeat
 from epsproc.geomFunc.gamma import gammaCalc
@@ -253,9 +255,60 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
     return betaJ
 
 
+def matEReformat(matE, Eind = None, Eval = None):
+    """
+    Reformat matrix elements from Xarray in usual ePSproc style to Pandas DataFrame format for gammaCalc.
+    
+    TODO: generalise and move to gammaCalc code, this already has denMatReformat (see https://github.com/phockett/ePSproc/blob/56c01f0a1f3ba90c1409a32a276c241e04165638/epsproc/geomFunc/gamma/gammaCalc.py#L618C5-L618C19)
+    
+    18/05/25 v1 from test/demo 4.05 notebook.
+    
+    """
+    
+    # Set default E index
+    if (Eind is None) and (Eval is None):
+        Eind = 0
+    
+    # SHOULD ALSO test and set if value (not index) passed...
+    # elif Eval is not None:
+    #     pass
+    
+    # DEBUG...
+    print(f"MatE passed as type {type(matE)}")
+    
+    # For ePSproc set matE, should already had PD set, just need to subselect and clean-up
+    if isinstance(matE, xr.DataArray):
+    # if type(matE).__name__   # Options for skipping Xarray import...?
+        if hasattr(matE, 'pd'):
+            print(f"Converting from existing pd")
+            matEpd = matE.pd[Eind].to_frame()  # Subselect on E and ensure Frame
+            
+            # Clean up for gammaCalc
+            matEpd.rename(columns={0:'matE1'}, inplace=True)
+            matEpd = matEpd.droplevel(['Cont','Targ','Total','Type','it'])
+
+            # DROP MU - optional
+            matEpd = matEpd.droplevel('mu')
+            matEpdClean = matEpd[~matEpd.index.duplicated()]  # Drop duplicated INDEX items
+            
+            return matEpdClean
+            
+        else:
+            print(f"TODO: set to pd")
+            # TODO: use ep.multiDimXrToPD() here for flexibility if different format passed.
+            pass
+        
+
+    # Return original matE if no conversion required
+    return matE
+
+
+
+
+
 #*********** Fitting (uses PEMtk functionality)
 
-def blmCalcFit(matE, basisReturn = 'Full', renorm = True, betaType = 'betaOut',  #'betaNorm'
+def blmCalcFit(matEinput, basisReturn = 'Full', renorm = True, betaType = 'betaOut',  #'betaNorm'
                **kwargs):
     """
     Wrap blmCalc for use with PEMtk fitting routines, as backend function.
@@ -271,12 +324,19 @@ def blmCalcFit(matE, basisReturn = 'Full', renorm = True, betaType = 'betaOut', 
        
     14/05/25 v1 sketching.
     
+    matEinput : matrix element for calculation
+        - Standard ePSproc style Xarray or Pandas DataFrame format.
+        - If Xarray, will be reformatted for gammaCalc, Pandas DataFrame at single E only, and drop additional indexers in current code (as of Dec. 2024).
+    
     basisReturn : optional, str, default = "BLM"
-    - 'BLM' return Xarray of results only.
-    - 'Full' return Xarray of results + basis set dictionary as set during the run.
-    - Note other types just return Full, this provides compatibility with existing AF fitting routines, see options at https://github.com/phockett/ePSproc/blob/56c01f0a1f3ba90c1409a32a276c241e04165638/epsproc/geomFunc/afblmGeom.py#L634
+        - 'BLM' return Xarray of results only.
+        - 'Full' return Xarray of results + basis set dictionary as set during the run.
+        - Note other types just return Full, this provides compatibility with existing AF fitting routines, see options at https://github.com/phockett/ePSproc/blob/56c01f0a1f3ba90c1409a32a276c241e04165638/epsproc/geomFunc/afblmGeom.py#L634
     
     """
+    
+    # Reformat matE if required
+    matE = matEReformat(matEinput)
     
 #     if JFlist is None:
 #         JFlist = [0.5,1.5]
