@@ -13,6 +13,7 @@ import xarray as xr  # Currently only for type checking, so may want to skip
 # For blm calcs
 from qbanalysis.hyperfine import pmmFromQuantumBeat
 from epsproc.geomFunc.gamma import gammaCalc
+from epsproc import multiDimXrToPD
 
 
 def A0(ji):
@@ -242,6 +243,12 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
             # betaCalcFull = gammaCalc.betaCalc(gammaPmm, matE=matEInputCleanMod,
             #                                           channel = [J,None,None,None], returnType='full') #, thres=1e-6) 
 
+            # Set to XR format...?
+            # 
+            # dataOutXR = betaOut.to_xarray().to_array()
+            # dataOutXR = dataOutXR.rename({'variable':'t'})
+            #
+            
             # Assign results to dict
             betaJ[isoKey][Jf] = {'betaOut': betaOut, 
                                   'betaNorm':betaOutNorm,
@@ -294,11 +301,45 @@ def matEReformat(matE, Eind = None, Eval = None):
             return matEpdClean
             
         else:
-            print(f"TODO: set to pd")
-            # TODO: use ep.multiDimXrToPD() here for flexibility if different format passed.
-            pass
+            # print(f"TODO: set to pd")
+            # # TODO: use ep.multiDimXrToPD() here for flexibility if different format passed.
+            # pass
         
+            # From setMatE.py:
+            # Set PD table - see also classes._IO.matEtoPD() method for wrapped version.
+            # matE.attrs['pd'],_ = pdTest, _ = multiDimXrToPD(matE, colDims = eType if len(Evals)>1 else matE.attrs['harmonics']['keyDims'], thres=None, squeeze=False)
+            # return multiDimXrToPD(matE, colDims='l', squeeze = False)  # TEST multiDimXrToPD - sort-of works, but will need to reformat!
+                      
+            # Version from PEMtk, needs non-default col dim if missing.
+            # Q: minimal array requirement for gammaCalc?  Just (l,m)?
+            # See also PEMtk fitClass.reconParams()
+            # return data.pdConvSetFit(matErecon, colDim='m')  
+            
+            # TEST RECON - OK WITH HARD-CODED DIM NAME FOR SINGLETON E DIM!!!!
+            # UGLY!
+            # NOTE THIS ASSUMES FORMAT AS RETURNED BY fitting function via `reconParams()`, may not be general
+            matErecon = matE.copy()
+            matErecon.name = 'matE1'
+            matEreconPD = matErecon.unstack().to_dataframe()
+            
+            return matEreconPD
+            
+    
+    
+#     # TODO: convert from params, as per main PEMtk fitClass method
+#     # NOTE this needs to push back to PD in this case too.
+#     if isinstance(matE, Parameters):
+#         # Set matE from passed params object
+#         # matE = self.reconParams(matE, lmmuList)
+        
+#         # PARAMS conv testing...
+#         # Q: minimal array requirement for gammaCalc?  Just (l,m)?
+#         matErecon = data.reconParams()
+#         # matEreconPD = data.matEtoPD   # Class wrapped version, for data keys
+        
+#         return data.pdConvSetFit(matErecon, colDim='m')  # Version from PEMtk, needs non-default col dim if missing.
 
+        
     # Return original matE if no conversion required
     return matE
 
@@ -332,6 +373,8 @@ def blmCalcFit(matEinput, basisReturn = 'Full', renorm = True, betaType = 'betaO
         - 'BLM' return Xarray of results only.
         - 'Full' return Xarray of results + basis set dictionary as set during the run.
         - Note other types just return Full, this provides compatibility with existing AF fitting routines, see options at https://github.com/phockett/ePSproc/blob/56c01f0a1f3ba90c1409a32a276c241e04165638/epsproc/geomFunc/afblmGeom.py#L634
+        
+    NOTE: currently blmCalc returns results in Pandas DataFrame, may want to convert to XR for use with PEMtk plotting routines. (But fitting OK.)
     
     """
     
