@@ -15,6 +15,9 @@ from qbanalysis.hyperfine import pmmFromQuantumBeat
 from epsproc.geomFunc.gamma import gammaCalc
 from epsproc import multiDimXrToPD
 
+# For logging
+from loguru import logger
+
 
 def A0(ji):
     """
@@ -62,6 +65,7 @@ def A0df(ji):
 def blmCalc(calcDict, matE = None, isoKeys = None, 
             JFlist = None, channel = None,
             thres=1e-4, forceCalc = False,
+            trange = None,
             **kwargs):
     """
     Compute photoionziation ($\beta_{L,M}$ parameters) for state-selected case including spin.
@@ -90,6 +94,10 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
         
     forceCalc : bool, default = False
         Force recalculation of gamma terms and override terms in calcDict if True.
+        
+    trange : list, optional, default = None
+        Set t range limit if desired, trange = [tmin,tmax].
+        This is used to sub-select on density matrix (pmm) which defines t-axis.
         
     **kwargs : unused
         Allow for arb arg passing for fitting wrapper.
@@ -161,6 +169,11 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
             # Version from calcDict - may want to check and call pmmFromQuantumBeat() if required.
             # NOTE - for pmmFromQuantumBeat(calcDict) with uncertainties need to subselect from dataset too!
             pmmSub = calcDict['pmmUn'][isoKey][isoKey].sel({'J':J,'Jp':Jp})
+            
+            # Optionally set trange
+            print(f"trange={trange}")
+            if trange is not None:
+                pmmSub = pmmSub.sel(t=slice(trange[0],trange[1]))
 
             # Calc Cterms
             # 29/11/24 - allow multiple Jf/Nc for spin case. Set Jf=None for this case.
@@ -189,7 +202,8 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
 
             # Compute or set Cterms
             if not forceCalc and (gKey in calcDict['gamma'][isoKey].keys()):
-                print(f"Found gKey {gKey} in calcDict['gamma'][{isoKey}].")
+                logger.debug(f"Found gKey {gKey} in calcDict['gamma'][{isoKey}].")
+                # print(f"Found gKey {gKey} in calcDict['gamma'][{isoKey}].")
                 # print(f"Found channel {channel} in calcDict['gamma'][{isoKey}].")
                 # Cterms = calcDict['gamma'][isoKey][tuple(channel)]['Cterms']  # Specific terms
                 # locals().update(calcDict['gamma'][isoKey][tuple(channel)])   # Unpack to locals
@@ -201,7 +215,8 @@ def blmCalc(calcDict, matE = None, isoKeys = None,
                 # locals().update(**d)
                 
             else:
-                print(f"Computing gammas for channel {channel}, {isoKey}, Jf={Jf}.")
+                logger.debug(f"Computing gammas for channel {channel}, {isoKey}, Jf={Jf}.")
+                # print(f"Computing gammas for channel {channel}, {isoKey}, Jf={Jf}.")
                 
                 # Compute spin weightings for given Jf case (==Jc in function).
                 spinDict = gammaCalc.spinWeightings(selectors={'Jc':Jf})
@@ -281,13 +296,15 @@ def matEReformat(matE, Eind = None, Eval = None):
     #     pass
     
     # DEBUG...
-    print(f"MatE passed as type {type(matE)}")
+    # print(f"MatE passed as type {type(matE)}")
+    logger.debug(f"MatE passed as type {type(matE)}")
     
     # For ePSproc set matE, should already had PD set, just need to subselect and clean-up
     if isinstance(matE, xr.DataArray):
     # if type(matE).__name__   # Options for skipping Xarray import...?
         if hasattr(matE, 'pd'):
-            print(f"Converting from existing pd")
+            # print(f"Converting from existing pd")
+            logger.debug("Converting from existing pd")
             matEpd = matE.pd[Eind].to_frame()  # Subselect on E and ensure Frame
             
             # Clean up for gammaCalc
@@ -301,6 +318,7 @@ def matEReformat(matE, Eind = None, Eval = None):
             return matEpdClean
             
         else:
+            logger.debug("Setting matE with XR to PD routine.")
             # print(f"TODO: set to pd")
             # # TODO: use ep.multiDimXrToPD() here for flexibility if different format passed.
             # pass
