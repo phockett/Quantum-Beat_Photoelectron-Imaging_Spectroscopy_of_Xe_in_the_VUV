@@ -368,6 +368,7 @@ def matEReformat(matE, Eind = None, Eval = None):
 #*********** Fitting (uses PEMtk functionality)
 
 def blmCalcFit(matEinput, basisReturn = 'Full', renorm = True, betaType = 'betaOut',  #'betaNorm'
+               betaRef = None,
                **kwargs):
     """
     Wrap blmCalc for use with PEMtk fitting routines, as backend function.
@@ -386,11 +387,26 @@ def blmCalcFit(matEinput, basisReturn = 'Full', renorm = True, betaType = 'betaO
     matEinput : matrix element for calculation
         - Standard ePSproc style Xarray or Pandas DataFrame format.
         - If Xarray, will be reformatted for gammaCalc, Pandas DataFrame at single E only, and drop additional indexers in current code (as of Dec. 2024).
-    
+
+    renorm : bool, optional, default = True
+        Renormalised betas to B00 if true.
+
     basisReturn : optional, str, default = "BLM"
         - 'BLM' return Xarray of results only.
         - 'Full' return Xarray of results + basis set dictionary as set during the run.
         - Note other types just return Full, this provides compatibility with existing AF fitting routines, see options at https://github.com/phockett/ePSproc/blob/56c01f0a1f3ba90c1409a32a276c241e04165638/epsproc/geomFunc/afblmGeom.py#L634
+        
+    betaType : string, default = 'betaOut'
+        Key for betas in output dataframe (as set in :py:func:`betaCalc()`).
+        - 'betaOut' unnormalised betas.
+        - 'betaOutNorm' normalised betas.
+        
+    betaRef : pd.DataFrame, optional
+        If passed use to extend or chop model results (L,M) values to match data.
+        NOT CURRENTLY IMPLEMENTED.
+        To avoid NaNs in fitting, may need to run with `data.fit(nan_policy='omit')` in cases where (L,M) indexes diverge.
+        See https://lmfit.github.io/lmfit-py/faq.html#i-get-errors-from-nan-in-my-fit-what-can-i-do
+        Note this corresponds to a "missing data" case in the input, and should be consistent over a fitting run, BUT need to be careful that model is still physical.
         
     NOTE: currently blmCalc returns results in Pandas DataFrame, may want to convert to XR for use with PEMtk plotting routines. (But fitting OK.)
     
