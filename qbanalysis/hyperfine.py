@@ -395,14 +395,102 @@ def pmmFromQuantumBeat(calcDict, isoKeys = None):
 # Spatial distribution of J-vectors from T(J)KQ
 # Use eqn. 101 in Blum (p148)
 
+def calcW(TKQ, J = None, norm = 1.0,
+          isoKey=None):
+    """
+    Compute real-space W(theta,phi) representation, spatial dist from TKQ. (Sum Ylm from a list, inc. ang mom coupling and optional normalisation.)
+    
+    The spatial representation of the ensemble can be defined in terms
+    of the state multipoles - hence the name - by expanding in a suitable
+    basis, usually the spherical harmonics. For example, for a single
+    angular momentum state $J$, this is given by (Eqn. 4.101 in Blum):
+
+    \begin{equation}
+    W(\theta,\phi)=\left(\frac{1}{4\pi}\right)^{1/2}\sum_{KQ}(-1)^{J}(2J+1)^{1/2}\left(\begin{array}{ccc}
+    J & J & K\\
+    0 & 0 & 0
+    \end{array}\right)\left\langle T(J)_{KQ}^{\dagger}\right\rangle Y_{KQ}(\theta,\phi)
+    \end{equation}
+    
+    Parameters
+    ----------
+    
+    TKQ : list, Numpy array, Xarray or dictionary
+        $T_{K,Q}$ parameters to expand.
+        Backend will use functions `sphSumTKQ` or `sphSumTKQX` depending on datatype.
+        
+        - For Xarray, assumes TKQ as set by `computeModel()` function, without uncertainties. 
+        - If dictionary, should be `calcDict` format as set by `computeModel()` or `calcAdvFitModel()` functions. TKQ data from `calcDict['modelDict'][isoKey]`
+        
+    J : int or float, default = None
+        J value to use.
+        If None, will use `calcDict['modelDict'][isoKey].attrs['states']['Jf']` for calcDict case, or skip calc otherwise.
+        
+    Returns
+    -------
+    W : list or Xarray
+        Datatype depends on input.
+        list for legacy inputs.
+        Xarray for updated inputs 
+    
+    """
+    skipCalc = False
+    
+    # Set default isoKey, but only used for dict case.
+    if isoKey is None:
+        isoKey = '129Xe' #'131Xe'
+        
+    if isinstance(TKQ, xr.DataArray):
+        try:
+            # Check for uncertainties.
+            # NOTE: should also be able to check TKQ.attrs['uncertainties']...? May not be updated?
+            if TKQ.dtype != float:
+                logger.info(f"TKQ datatype not recognised, please pass Xarray or list without uncertainites.")
+                skipCalc=True
+
+        except:
+            logger.info(f"TKQ datatype can't be determined, please pass Xarray or list without uncertainites.")
+            skipCalc=True
+            
+        if not skipCalc:
+            if J is None:
+                J = TKQ.attrs['states']['Jf']
+                
+            logger.info(f"TKQ Xarray data passed, processing TKQ from with J={J}.")
+                
+            return sphSumTKQX(TKQ, J, norm)
+        
+    # Dataset case - TODO, add option to simply pass isoKey here?
+    # UPDATE: now set if passing dict datatype
+    elif isinstance(TKQ, xr.Dataset):
+        logger.info(f"TKQ xr.Dataset found, please pass xr.DataArray or list without uncertainites.")
+        
+    elif isinstance(TKQ,dict):
+        if J is None:
+            J = TKQ['modelDict'][isoKey].attrs['states']['Jf']
+        
+        logger.info(f"calcDict passed, processing TKQ from calcDict['modelDict'][{isoKey}], J={J}.")
+        
+        # Pull TKQ from calcDict
+        TKQin = TKQ['modelDict'][isoKey].copy()
+
+        # Split out uncertainties, not supported in calcW() currently
+        TKQun = splitUncertaintiesToDataset(TKQin)
+
+        # Calculate
+        W = calcW(TKQun[isoKey],J)
+        
+        return W
+        
+    else:
+        return sphSumTKQ(TKQ, J, norm)
+    
+
 # Function to sum Ylm from a list, with optional normalisation.
 # Include additional 3j term to implement eqn. 101, for real-space W(theta,phi) representation.
 def sphSumTKQ(A, J, norm = 1.0):
     """
-    Compute sphSumTKQ(A, J, norm = 1.0)
-    
-    # Function to sum Ylm from a list, with optional normalisation.
-    # Include additional 3j term to implement eqn. 101, for real-space W(theta,phi) representation.
+    Compute real-space W(theta,phi) representation, spatial dist from TKQ. (Sum Ylm from a list, inc. ang mom coupling and optional normalisation.)
     
     The spatial representation of the ensemble can be defined in terms
     of the state multipoles - hence the name - by expanding in a suitable
@@ -428,6 +516,48 @@ def sphSumTKQ(A, J, norm = 1.0):
             Atp += angMomTerm*Ynm(int(A[row][0]),int(A[row][1]),theta,phi) * A[row][2]/norm # Add TKQ*Y(K,Q) term
             
     return Atp*sqrt(1/(4*pi))
+
+
+# Function to sum Ylm from a list, with optional normalisation.
+# Include additional 3j term to implement eqn. 101, for real-space W(theta,phi) representation.
+# As sphSumTKQ(), but for Xarray formatted inputs. 
+def sphSumTKQX(TKQ, J, norm = 1.0):
+    """
+    
+    Compute real-space W(theta,phi) representation, spatial dist from TKQ. (Sum Ylm from a list, inc. ang mom coupling and optional normalisation.)
+
+    NOTE: As sphSumTKQ(), but for Xarray formatted inputs. Assumes TKQ Xarray as set by `computeModel()` function, without uncertainties. 
+    
+    The spatial representation of the ensemble can be defined in terms
+    of the state multipoles - hence the name - by expanding in a suitable
+    basis, usually the spherical harmonics. For example, for a single
+    angular momentum state $J$, this is given by (Eqn. 4.101 in Blum):
+
+    \begin{equation}
+    W(\theta,\phi)=\left(\frac{1}{4\pi}\right)^{1/2}\sum_{KQ}(-1)^{J}(2J+1)^{1/2}\left(\begin{array}{ccc}
+    J & J & K\\
+    0 & 0 & 0
+    \end{array}\right)\left\langle T(J)_{KQ}^{\dagger}\right\rangle Y_{KQ}(\theta,\phi)
+    \end{equation}
+    
+    """
+
+    angMomTerm = []
+    
+    for K in TKQ.K.data:
+        # angMomTerm[K] = (-1)**J * (2*J+1) * wigner_3j(J,J,K,0,0,0)
+        angMomTerm.append((-1)**J * (2*J+1) * wigner_3j(J,J,K,0,0,0))
+
+    # angMomTerm = 
+    angMomXR = xr.DataArray(data = angMomTerm, coords = {"K":TKQ.K.data}, dims=["K"]) 
+
+    W = angMomXR * TKQ.unstack() * sqrt(1/(4*np.pi))
+
+    # Tidy up
+    # FOr plotter need BLM data labels, and also ensure type(float) as above gives generic object result.
+    W = W.rename({"K":"l","Q":"m"}).stack({'BLM':('l','m')}).astype(float)
+    
+    return W
 
 
 # Define numerical sum over a list of harmonics defined symbolically.
