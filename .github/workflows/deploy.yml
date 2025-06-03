@@ -27,7 +27,7 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Install dependencies
       - name: Set up Python 3.10.11
@@ -49,7 +49,7 @@ jobs:
       # execute:
       #   execute_notebooks: cache
       - name: cache executed notebooks
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: doc-source/_build/.jupyter_cache
           key: jupyter-book-cache-${{ hashFiles('requirements.txt') }}
@@ -62,11 +62,11 @@ jobs:
 
       # Upload the book's HTML as an artifact
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: "doc-source/_build/html"
 
       # Deploy the book's HTML to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v3
+        uses: actions/deploy-pages@v4
